@@ -16,7 +16,7 @@ interface AppState {
   addMarker: (imageIndex: 1 | 2, marker: Marker) => void;
   removeMarker: (id: string) => void;
   updateMarkerLabel: (id: string, label: string) => void;
-  updateMarkerSize: (id: string, size: number) => void;
+  updateMarkerColor: (id: string, color: string) => void;
   
   updatePanZoom: (imageIndex: 1 | 2, zoom: number, panX: number, panY: number, rotation: number) => void;
   resetPanZoom: () => void;
@@ -64,9 +64,9 @@ export const useAppStore = create<AppState>((set) => ({
     image2: { ...state.image2, markers: state.image2.markers.map(m => m.id === id ? { ...m, label } : m) },
   })),
   
-  updateMarkerSize: (id, size) => set((state) => ({
-    image1: { ...state.image1, markers: state.image1.markers.map(m => m.id === id ? { ...m, size } : m) },
-    image2: { ...state.image2, markers: state.image2.markers.map(m => m.id === id ? { ...m, size } : m) },
+  updateMarkerColor: (id, color) => set((state) => ({
+    image1: { ...state.image1, markers: state.image1.markers.map(m => m.id === id ? { ...m, color } : m) },
+    image2: { ...state.image2, markers: state.image2.markers.map(m => m.id === id ? { ...m, color } : m) },
   })),
   
   updatePanZoom: (imageIndex, zoom, panX, panY, rotation) => set((state) => {

@@ -3,7 +3,7 @@ import { useAppStore } from '../store';
 import { X } from 'lucide-react';
 
 export const MarkerPanel: React.FC = () => {
-  const { image1, image2, removeMarker, updateMarkerLabel, updateMarkerSize } = useAppStore();
+  const { image1, image2, removeMarker, updateMarkerLabel, updateMarkerColor } = useAppStore();
 
   // Combine markers from both images or just show them grouped
   const markers1 = image1.markers;
@@ -28,7 +28,7 @@ export const MarkerPanel: React.FC = () => {
             const m1 = markers1.find(m => m.id === id);
             const m2 = markers2.find(m => m.id === id);
             const label = m1?.label || m2?.label || '';
-            const size = m1?.size || m2?.size || 8;
+            const color = m1?.color || m2?.color || '#ef4444';
 
             return (
               <div key={id} className="bg-slate-700/50 rounded-lg p-3 border border-slate-600/50 flex flex-col gap-3 group transition-colors hover:bg-slate-700">
@@ -55,17 +55,13 @@ export const MarkerPanel: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2 px-1">
-                  <span className="text-xs text-slate-400">Size:</span>
+                  <span className="text-xs text-slate-400">Color:</span>
                   <input 
-                    type="range" 
-                    min="4" 
-                    max="32" 
-                    step="1"
-                    value={size}
-                    onChange={(e) => updateMarkerSize(id, Number(e.target.value))}
-                    className="flex-1 accent-red-500"
+                    type="color" 
+                    value={color}
+                    onChange={(e) => updateMarkerColor(id, e.target.value)}
+                    className="w-full h-8 cursor-pointer bg-transparent rounded border-none p-0"
                   />
-                  <span className="text-xs text-slate-400 w-4">{size}</span>
                 </div>
               </div>
             );

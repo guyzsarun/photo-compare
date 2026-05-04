@@ -3,7 +3,7 @@ export interface Marker {
   x: number;
   y: number;
   label: string;
-  size?: number;
+  color?: string;
 }
 
 export interface ImageState {

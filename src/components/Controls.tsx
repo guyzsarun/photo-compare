@@ -38,7 +38,9 @@ export const Controls: React.FC = () => {
     const a = document.createElement('a');
     a.href = url;
     a.download = 'photo-compare-project.json';
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
