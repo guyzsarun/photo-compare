@@ -45,7 +45,33 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
       const currentState = imageIndex === 1 ? appState.image1 : appState.image2;
       const currentRot = currentState.rotation || 0;
 
+      if (evt.shiftKey) { // Rotate
+        (canvas as any).isRotating = true;
+        canvas.selection = false;
+        
+        const rect = canvas.getElement().getBoundingClientRect();
+        const mouseX = evt.clientX - rect.left;
+        const mouseY = evt.clientY - rect.top;
+        
+        const st = useAppStore.getState();
+        const currentState = imageIndex === 1 ? st.image1 : st.image2;
+        (canvas as any).initialRotation = currentState.rotation || 0;
+        
+        const vpt = canvas.viewportTransform!;
+        const cx = canvas.getWidth() / 2;
+        const cy = canvas.getHeight() / 2;
+        
+        const pivotX = cx * canvas.getZoom() + vpt[4];
+        const pivotY = cy * canvas.getZoom() + vpt[5];
+        
+        (canvas as any).initialAngle = Math.atan2(mouseY - pivotY, mouseX - pivotX);
+        
+        return;
+      }
+
       if (appState.isAddingMarker && imageObjRef.current) {
+        if (opt.target && opt.target.name === 'marker') return;
+        
         const pointer = canvas.getPointer(opt.e);
         const img = imageObjRef.current;
 
@@ -85,8 +111,10 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
           };
           appState.addMarker(imageIndex, newMarker);
         }
-      } else if (evt.altKey || opt.e.shiftKey || opt.e.button === 0) { // Allow drag
+      } else if (evt.altKey || opt.e.button === 0) { // Allow drag
         if (!appState.isAddingMarker) {
+          if (opt.target && opt.target.name === 'marker') return;
+
           canvas.isDragging = true;
           canvas.selection = false;
           canvas.lastPosX = evt.clientX;
@@ -96,7 +124,38 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
     });
 
     canvas.on('mouse:move', (opt) => {
-      if (canvas.isDragging) {
+      if ((canvas as any).isRotating) {
+        const e = opt.e as MouseEvent;
+        const rect = canvas.getElement().getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        const vpt = canvas.viewportTransform!;
+        const cx = canvas.getWidth() / 2;
+        const cy = canvas.getHeight() / 2;
+        
+        const pivotX = cx * canvas.getZoom() + vpt[4];
+        const pivotY = cy * canvas.getZoom() + vpt[5];
+        
+        const currentAngle = Math.atan2(mouseY - pivotY, mouseX - pivotX);
+        let deltaTheta = (currentAngle - (canvas as any).initialAngle) * (180 / Math.PI);
+        
+        if (deltaTheta > 180) deltaTheta -= 360;
+        if (deltaTheta < -180) deltaTheta += 360;
+        
+        let newRot = (canvas as any).initialRotation + deltaTheta;
+        if (newRot > 180) newRot -= 360;
+        if (newRot < -180) newRot += 360;
+        
+        const st = useAppStore.getState();
+        st.updatePanZoom(imageIndex, canvas.getZoom(), vpt[4], vpt[5], newRot);
+        
+        // Update visually immediately for smoothness
+        if (imageObjRef.current) {
+          imageObjRef.current.set({ angle: newRot });
+          canvas.requestRenderAll();
+        }
+      } else if (canvas.isDragging) {
         const e = opt.e as MouseEvent;
         const vpt = canvas.viewportTransform!;
         vpt[4] += e.clientX - canvas.lastPosX!;
@@ -114,23 +173,64 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
       if (!canvas.viewportTransform) return;
       canvas.setViewportTransform(canvas.viewportTransform);
       canvas.isDragging = false;
+      (canvas as any).isRotating = false;
       canvas.selection = true;
     });
 
     canvas.on('mouse:wheel', (opt) => {
-      const delta = (opt.e as WheelEvent).deltaY;
-      let zoom = canvas.getZoom();
-      zoom *= 0.999 ** delta;
-      if (zoom > 20) zoom = 20;
-      if (zoom < 0.1) zoom = 0.1;
+      const e = opt.e as WheelEvent;
+      e.preventDefault();
+      e.stopPropagation();
 
-      canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
-      opt.e.preventDefault();
-      opt.e.stopPropagation();
-
-      const vpt = canvas.viewportTransform!;
       const st = useAppStore.getState();
-      st.updatePanZoom(imageIndex, canvas.getZoom(), vpt[4], vpt[5], imageIndex === 1 ? (st.image1.rotation || 0) : (st.image2.rotation || 0));
+      const currentState = imageIndex === 1 ? st.image1 : st.image2;
+
+      if (e.shiftKey) {
+        // Rotate around mouse
+        const delta = e.deltaY;
+        const deltaTheta = delta * 0.1; // 0.1 degrees per scroll unit
+        
+        let newRot = (currentState.rotation || 0) + deltaTheta;
+        if (newRot > 180) newRot -= 360;
+        if (newRot < -180) newRot += 360;
+        
+        const vpt = canvas.viewportTransform!;
+        const cx = canvas.getWidth() / 2;
+        const cy = canvas.getHeight() / 2;
+        const pivotX = cx * canvas.getZoom() + vpt[4];
+        const pivotY = cy * canvas.getZoom() + vpt[5];
+        
+        const rect = canvas.getElement().getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        const Vx = mouseX - pivotX;
+        const Vy = mouseY - pivotY;
+        
+        const rad = deltaTheta * (Math.PI / 180);
+        const cos = Math.cos(rad);
+        const sin = Math.sin(rad);
+        
+        const VprimeX = Vx * cos - Vy * sin;
+        const VprimeY = Vx * sin + Vy * cos;
+        
+        const newPanX = vpt[4] + (Vx - VprimeX);
+        const newPanY = vpt[5] + (Vy - VprimeY);
+        
+        st.updatePanZoom(imageIndex, canvas.getZoom(), newPanX, newPanY, newRot);
+      } else {
+        // Zoom around mouse
+        const delta = e.deltaY;
+        let zoom = canvas.getZoom();
+        zoom *= 0.999 ** delta;
+        if (zoom > 20) zoom = 20;
+        if (zoom < 0.1) zoom = 0.1;
+
+        canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+        
+        const vpt = canvas.viewportTransform!;
+        st.updatePanZoom(imageIndex, canvas.getZoom(), vpt[4], vpt[5], currentState.rotation || 0);
+      }
     });
 
     return () => {
@@ -277,9 +377,33 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
         top: absoluteY,
         originX: 'center',
         originY: 'center',
-        selectable: false,
-        evented: false,
+        selectable: true,
+        evented: true,
+        hasControls: false,
+        hasBorders: false,
+        hoverCursor: 'move',
+        moveCursor: 'move',
         name: 'marker',
+      });
+      
+      circle.on('modified', (e) => {
+        const target = e.target;
+        if (!target) return;
+        
+        const rx = target.left! - imgCenterX;
+        const ry = target.top! - imgCenterY;
+        
+        const un_rad = -safeRotation * (Math.PI / 180);
+        const px = rx * Math.cos(un_rad) - ry * Math.sin(un_rad);
+        const py = rx * Math.sin(un_rad) + ry * Math.cos(un_rad);
+        
+        const cx = px / (img.scaleX || 1);
+        const cy = py / (img.scaleY || 1);
+        
+        const x = cx + (img.width || 0) / 2;
+        const y = cy + (img.height || 0) / 2;
+        
+        useAppStore.getState().updateMarkerPosition(imageIndex, marker.id, x, y);
       });
 
       canvas.add(circle);

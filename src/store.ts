@@ -17,6 +17,7 @@ interface AppState {
   removeMarker: (id: string) => void;
   updateMarkerLabel: (id: string, label: string) => void;
   updateMarkerColor: (id: string, color: string) => void;
+  updateMarkerPosition: (imageIndex: 1 | 2, id: string, x: number, y: number) => void;
   
   updatePanZoom: (imageIndex: 1 | 2, zoom: number, panX: number, panY: number, rotation: number) => void;
   resetPanZoom: () => void;
@@ -68,6 +69,14 @@ export const useAppStore = create<AppState>((set) => ({
     image1: { ...state.image1, markers: state.image1.markers.map(m => m.id === id ? { ...m, color } : m) },
     image2: { ...state.image2, markers: state.image2.markers.map(m => m.id === id ? { ...m, color } : m) },
   })),
+  
+  updateMarkerPosition: (imageIndex, id, x, y) => set((state) => {
+    if (imageIndex === 1) {
+      return { image1: { ...state.image1, markers: state.image1.markers.map(m => m.id === id ? { ...m, x, y } : m) } };
+    } else {
+      return { image2: { ...state.image2, markers: state.image2.markers.map(m => m.id === id ? { ...m, x, y } : m) } };
+    }
+  }),
   
   updatePanZoom: (imageIndex, zoom, panX, panY, rotation) => set((state) => {
     if (state.syncPanZoom) {
