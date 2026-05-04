@@ -1,0 +1,37 @@
+{
+  "name": "photo-compare",
+  "version": "1.0.0",
+  "description": "A web application that allows users to upload and compare two photos side-by-side with interactive marker placement for precise point-to-point comparison.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@types/fabric": "^5.3.11",
+    "autoprefixer": "^10.5.0",
+    "clsx": "^2.1.1",
+    "fabric": "^5.3.0",
+    "lucide-react": "^1.14.0",
+    "postcss": "^8.5.13",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-dropzone": "^15.0.0",
+    "tailwindcss": "^3.4.19",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.10"
+  }
+}
