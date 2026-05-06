@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Upload } from 'lucide-react';
 import { Controls } from './components/Controls';
 import { ImageUploader } from './components/ImageUploader';

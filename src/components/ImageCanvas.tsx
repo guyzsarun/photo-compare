@@ -115,10 +115,10 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
         if (!appState.isAddingMarker) {
           if (opt.target && opt.target.name === 'marker') return;
 
-          canvas.isDragging = true;
+          (canvas as any).isDragging = true;
           canvas.selection = false;
-          canvas.lastPosX = evt.clientX;
-          canvas.lastPosY = evt.clientY;
+          (canvas as any).lastPosX = evt.clientX;
+          (canvas as any).lastPosY = evt.clientY;
         }
       }
     });
@@ -155,14 +155,14 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
           imageObjRef.current.set({ angle: newRot });
           canvas.requestRenderAll();
         }
-      } else if (canvas.isDragging) {
+      } else if ((canvas as any).isDragging) {
         const e = opt.e as MouseEvent;
         const vpt = canvas.viewportTransform!;
-        vpt[4] += e.clientX - canvas.lastPosX!;
-        vpt[5] += e.clientY - canvas.lastPosY!;
+        vpt[4] += e.clientX - (canvas as any).lastPosX;
+        vpt[5] += e.clientY - (canvas as any).lastPosY;
         canvas.requestRenderAll();
-        canvas.lastPosX = e.clientX;
-        canvas.lastPosY = e.clientY;
+        (canvas as any).lastPosX = e.clientX;
+        (canvas as any).lastPosY = e.clientY;
 
         const st = useAppStore.getState();
         st.updatePanZoom(imageIndex, canvas.getZoom(), vpt[4], vpt[5], imageIndex === 1 ? (st.image1.rotation || 0) : (st.image2.rotation || 0));
@@ -172,7 +172,7 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
     canvas.on('mouse:up', () => {
       if (!canvas.viewportTransform) return;
       canvas.setViewportTransform(canvas.viewportTransform);
-      canvas.isDragging = false;
+      (canvas as any).isDragging = false;
       (canvas as any).isRotating = false;
       canvas.selection = true;
     });
