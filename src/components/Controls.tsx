@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { useAppStore } from '../store';
 import { MapPin, Link2, ZoomIn, ZoomOut, Maximize, Trash2, Download, Upload } from 'lucide-react';
 import clsx from 'clsx';
@@ -8,10 +8,8 @@ export const Controls: React.FC = () => {
     isAddingMarker, toggleAddingMarker,
     syncPanZoom, toggleSyncPanZoom,
     resetPanZoom, clearImages, clearMarkers,
-    image1, image2
+    image1, image2, projectFileHandle, setProjectFileHandle
   } = useAppStore();
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleZoom = (direction: 'in' | 'out') => {
     const store = useAppStore.getState();
@@ -27,50 +25,69 @@ export const Controls: React.FC = () => {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const data = {
-      image1: { ...image1, file: null },
-      image2: { ...image2, file: null }
+      image1: { ...image1, file: null, brightness: undefined, contrast: undefined },
+      image2: { ...image2, file: null, brightness: undefined, contrast: undefined }
     };
     const json = JSON.stringify(data);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'photo-compare-project.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+
+    try {
+      let handle = projectFileHandle;
+      if (!handle) {
+        // @ts-ignore
+        handle = await window.showSaveFilePicker({
+          suggestedName: 'photo-compare-project.json',
+          types: [{
+            description: 'JSON Files',
+            accept: { 'application/json': ['.json'] },
+          }],
+        });
+        setProjectFileHandle(handle);
+      }
+
+      const writable = await handle.createWritable();
+      await writable.write(json);
+      await writable.close();
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.error('Failed to save project:', err);
+        alert('Failed to save project file.');
+      }
+    }
   };
 
-  const handleLoad = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const json = event.target?.result as string;
-        const data = JSON.parse(json);
-        
-        if (data.image1) {
-          useAppStore.setState(state => ({
-            image1: { ...state.image1, ...data.image1, rotation: data.image1.rotation || 0, markers: data.image1.markers || [] }
-          }));
-        }
-        if (data.image2) {
-          useAppStore.setState(state => ({
-            image2: { ...state.image2, ...data.image2, rotation: data.image2.rotation || 0, markers: data.image2.markers || [] }
-          }));
-        }
-      } catch (err) {
-        console.error("Failed to parse project file", err);
+  const handleLoad = async () => {
+    try {
+      // @ts-ignore
+      const [handle] = await window.showOpenFilePicker({
+        types: [{
+          description: 'JSON Files',
+          accept: { 'application/json': ['.json'] },
+        }],
+      });
+      
+      setProjectFileHandle(handle);
+      const file = await handle.getFile();
+      const text = await file.text();
+      const data = JSON.parse(text);
+      
+      if (data.image1) {
+        useAppStore.setState(state => ({
+          image1: { ...state.image1, ...data.image1, rotation: data.image1.rotation || 0, markers: data.image1.markers || [] }
+        }));
+      }
+      if (data.image2) {
+        useAppStore.setState(state => ({
+          image2: { ...state.image2, ...data.image2, rotation: data.image2.rotation || 0, markers: data.image2.markers || [] }
+        }));
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.error("Failed to load project file", err);
         alert("Invalid project file");
       }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
+    }
   };
 
   const hasImages = image1.dataUrl || image2.dataUrl;
@@ -94,19 +111,12 @@ export const Controls: React.FC = () => {
         </button>
         
         <button
-          onClick={() => fileInputRef.current?.click()}
+          onClick={handleLoad}
           className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors text-sm font-medium"
           title="Load Project"
         >
           <Upload size={16} /> Load
         </button>
-        <input 
-          type="file" 
-          accept=".json" 
-          ref={fileInputRef} 
-          onChange={handleLoad} 
-          className="hidden" 
-        />
       </div>
 
       <div className="flex items-center gap-2">

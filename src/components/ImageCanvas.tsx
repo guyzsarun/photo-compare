@@ -311,9 +311,12 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
     let changed = false;
 
     if (vpt[4] !== state.panX || vpt[5] !== state.panY || canvas.getZoom() !== state.zoom) {
-      canvas.setZoom(state.zoom);
-      vpt[4] = state.panX;
-      vpt[5] = state.panY;
+      const newVpt = [...canvas.viewportTransform!];
+      newVpt[0] = state.zoom;
+      newVpt[3] = state.zoom;
+      newVpt[4] = state.panX;
+      newVpt[5] = state.panY;
+      canvas.setViewportTransform(newVpt);
       changed = true;
     }
 
@@ -412,9 +415,68 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
     canvas.requestRenderAll();
   }, [state.markers, state.dataUrl, safeRotation, imageLoadedKey]);
 
+  // Handle snapping to marker
+  useEffect(() => {
+    const handleCenterMarker = (e: Event) => {
+      const customEvent = e as CustomEvent<{ id: string }>;
+      const markerId = customEvent.detail.id;
+      
+      const st = useAppStore.getState();
+      const currentState = imageIndex === 1 ? st.image1 : st.image2;
+      const marker = currentState.markers.find(m => m.id === markerId);
+      
+      if (marker && fabricRef.current && imageObjRef.current) {
+        const canvas = fabricRef.current;
+        const img = imageObjRef.current;
+        
+        const imgCenterX = img.left || 0;
+        const imgCenterY = img.top || 0;
+
+        const cx = marker.x - (img.width || 0) / 2;
+        const cy = marker.y - (img.height || 0) / 2;
+
+        const px = cx * (img.scaleX || 1);
+        const py = cy * (img.scaleY || 1);
+
+        const rad = safeRotation * (Math.PI / 180);
+        const rx = px * Math.cos(rad) - py * Math.sin(rad);
+        const ry = px * Math.sin(rad) + py * Math.cos(rad);
+
+        const absoluteX = imgCenterX + rx;
+        const absoluteY = imgCenterY + ry;
+
+        const currentZoom = canvas.getZoom();
+        const targetZoom = Math.max(currentZoom, 4); // Zoom to 4x, or keep current if higher
+        
+        const newPanX = (width / 2) - absoluteX * targetZoom;
+        const newPanY = (height / 2) - absoluteY * targetZoom;
+
+        console.log(`[ImageCanvas ${imageIndex}] center-marker event!`, {
+          markerId,
+          marker: { x: marker.x, y: marker.y },
+          absolute: { absoluteX, absoluteY },
+          canvasDimensions: { width, height },
+          zoom: targetZoom,
+          newPan: { newPanX, newPanY },
+          currentPan: { panX: canvas.viewportTransform![4], panY: canvas.viewportTransform![5] }
+        });
+
+        st.updatePanZoom(imageIndex, targetZoom, newPanX, newPanY, safeRotation);
+      } else {
+        console.log(`[ImageCanvas ${imageIndex}] marker not found or refs missing`, { markerId, hasMarker: !!marker, hasFabric: !!fabricRef.current, hasImg: !!imageObjRef.current });
+      }
+    };
+
+    window.addEventListener('center-marker', handleCenterMarker);
+    return () => {
+      window.removeEventListener('center-marker', handleCenterMarker);
+    };
+  }, [imageIndex, width, height, safeRotation]);
+
   return (
     <div
       ref={containerRef}
+      style={{ filter: `brightness(${state.brightness ?? 100}%) contrast(${state.contrast ?? 100}%)` }}
       className={`relative rounded border border-slate-700 overflow-hidden ${isAddingMarker ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'}`}
     />
   );

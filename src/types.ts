@@ -14,4 +14,6 @@ export interface ImageState {
   panX: number;
   panY: number;
   rotation: number;
+  brightness: number;
+  contrast: number;
 }

@@ -6,9 +6,11 @@ interface AppState {
   image2: ImageState;
   isAddingMarker: boolean;
   syncPanZoom: boolean; // Now syncs pan, zoom, and rotate
+  projectFileHandle: any;
   
   setImage1File: (file: File, dataUrl: string) => void;
   setImage2File: (file: File, dataUrl: string) => void;
+  setProjectFileHandle: (handle: any) => void;
   
   toggleAddingMarker: () => void;
   toggleSyncPanZoom: () => void;
@@ -20,6 +22,7 @@ interface AppState {
   updateMarkerPosition: (imageIndex: 1 | 2, id: string, x: number, y: number) => void;
   
   updatePanZoom: (imageIndex: 1 | 2, zoom: number, panX: number, panY: number, rotation: number) => void;
+  updateFilters: (imageIndex: 1 | 2, brightness: number, contrast: number) => void;
   resetPanZoom: () => void;
   clearImages: () => void;
   clearMarkers: () => void;
@@ -33,6 +36,8 @@ const initialImageState: ImageState = {
   panX: 0,
   panY: 0,
   rotation: 0,
+  brightness: 100, // percentage for CSS filter
+  contrast: 100, // percentage for CSS filter
 };
 
 export const useAppStore = create<AppState>((set) => ({
@@ -40,9 +45,11 @@ export const useAppStore = create<AppState>((set) => ({
   image2: { ...initialImageState },
   isAddingMarker: false,
   syncPanZoom: false, // Default to independent, per user request
+  projectFileHandle: null,
   
-  setImage1File: (file, dataUrl) => set((state) => ({ image1: { ...state.image1, file, dataUrl } })),
-  setImage2File: (file, dataUrl) => set((state) => ({ image2: { ...state.image2, file, dataUrl } })),
+  setImage1File: (file, dataUrl) => set((state) => ({ image1: { ...state.image1, file, dataUrl, markers: [] } })),
+  setImage2File: (file, dataUrl) => set((state) => ({ image2: { ...state.image2, file, dataUrl, markers: [] } })),
+  setProjectFileHandle: (handle) => set({ projectFileHandle: handle }),
   
   toggleAddingMarker: () => set((state) => ({ isAddingMarker: !state.isAddingMarker })),
   toggleSyncPanZoom: () => set((state) => ({ syncPanZoom: !state.syncPanZoom })),
@@ -85,15 +92,25 @@ export const useAppStore = create<AppState>((set) => ({
         image2: { ...state.image2, zoom, panX, panY, rotation },
       };
     } else {
-      return {
-        [`image${imageIndex}`]: { ...state[`image${imageIndex}`], zoom, panX, panY, rotation },
-      };
+      if (imageIndex === 1) {
+        return { image1: { ...state.image1, zoom, panX, panY, rotation } };
+      } else {
+        return { image2: { ...state.image2, zoom, panX, panY, rotation } };
+      }
+    }
+  }),
+  
+  updateFilters: (imageIndex, brightness, contrast) => set((state) => {
+    if (imageIndex === 1) {
+      return { image1: { ...state.image1, brightness, contrast } };
+    } else {
+      return { image2: { ...state.image2, brightness, contrast } };
     }
   }),
   
   resetPanZoom: () => set((state) => ({
-    image1: { ...state.image1, zoom: 1, panX: 0, panY: 0, rotation: 0 },
-    image2: { ...state.image2, zoom: 1, panX: 0, panY: 0, rotation: 0 },
+    image1: { ...state.image1, zoom: 1, panX: 0, panY: 0, rotation: 0, brightness: 100, contrast: 100 },
+    image2: { ...state.image2, zoom: 1, panX: 0, panY: 0, rotation: 0, brightness: 100, contrast: 100 },
   })),
   
   clearImages: () => set({ image1: { ...initialImageState }, image2: { ...initialImageState } }),

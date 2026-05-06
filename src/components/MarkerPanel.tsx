@@ -31,7 +31,11 @@ export const MarkerPanel: React.FC = () => {
             const color = m1?.color || m2?.color || '#ef4444';
 
             return (
-              <div key={id} className="bg-slate-700/50 rounded-lg p-3 border border-slate-600/50 flex flex-col gap-3 group transition-colors hover:bg-slate-700">
+              <div 
+                key={id} 
+                onClick={() => window.dispatchEvent(new CustomEvent('center-marker', { detail: { id } }))}
+                className="bg-slate-700/50 rounded-lg p-3 border border-slate-600/50 flex flex-col gap-3 group transition-colors hover:bg-slate-700 cursor-pointer"
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center text-red-400 font-bold text-sm shrink-0 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
                     {label}
@@ -40,13 +44,14 @@ export const MarkerPanel: React.FC = () => {
                   <input
                     type="text"
                     value={label}
+                    onClick={(e) => e.stopPropagation()}
                     onChange={(e) => updateMarkerLabel(id, e.target.value)}
                     className="bg-slate-900 border border-slate-600 rounded px-2 py-1 flex-1 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                     placeholder="Label..."
                   />
                   
                   <button
-                    onClick={() => removeMarker(id)}
+                    onClick={(e) => { e.stopPropagation(); removeMarker(id); }}
                     className="text-slate-500 hover:text-red-400 p-1 rounded-md hover:bg-slate-800 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                     title="Remove marker"
                   >
@@ -59,6 +64,7 @@ export const MarkerPanel: React.FC = () => {
                   <input 
                     type="color" 
                     value={color}
+                    onClick={(e) => e.stopPropagation()}
                     onChange={(e) => updateMarkerColor(id, e.target.value)}
                     className="w-full h-8 cursor-pointer bg-transparent rounded border-none p-0"
                   />
