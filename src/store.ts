@@ -7,7 +7,8 @@ interface AppState {
   isAddingMarker: boolean;
   syncPanZoom: boolean; // Now syncs pan, zoom, and rotate
   projectFileHandle: any;
-  
+
+  setImageFile: (imageIndex: 1 | 2, file: File, dataUrl: string) => void;
   setImage1File: (file: File, dataUrl: string) => void;
   setImage2File: (file: File, dataUrl: string) => void;
   setProjectFileHandle: (handle: any) => void;
@@ -47,6 +48,11 @@ export const useAppStore = create<AppState>((set) => ({
   syncPanZoom: false, // Default to independent, per user request
   projectFileHandle: null,
   
+  setImageFile: (imageIndex, file, dataUrl) => set((state) =>
+    imageIndex === 1
+      ? { image1: { ...state.image1, file, dataUrl, markers: [] } }
+      : { image2: { ...state.image2, file, dataUrl, markers: [] } },
+  ),
   setImage1File: (file, dataUrl) => set((state) => ({ image1: { ...state.image1, file, dataUrl, markers: [] } })),
   setImage2File: (file, dataUrl) => set((state) => ({ image2: { ...state.image2, file, dataUrl, markers: [] } })),
   setProjectFileHandle: (handle) => set({ projectFileHandle: handle }),
@@ -54,13 +60,11 @@ export const useAppStore = create<AppState>((set) => ({
   toggleAddingMarker: () => set((state) => ({ isAddingMarker: !state.isAddingMarker })),
   toggleSyncPanZoom: () => set((state) => ({ syncPanZoom: !state.syncPanZoom })),
   
-  addMarker: (imageIndex, marker) => set((state) => {
-    if (imageIndex === 1) {
-      return { image1: { ...state.image1, markers: [...state.image1.markers, marker] } };
-    } else {
-      return { image2: { ...state.image2, markers: [...state.image2.markers, marker] } };
-    }
-  }),
+  addMarker: (imageIndex, marker) => set((state) =>
+    imageIndex === 1
+      ? { image1: { ...state.image1, markers: [...state.image1.markers, marker] } }
+      : { image2: { ...state.image2, markers: [...state.image2.markers, marker] } },
+  ),
   
   removeMarker: (id) => set((state) => ({
     image1: { ...state.image1, markers: state.image1.markers.filter(m => m.id !== id) },
@@ -77,13 +81,11 @@ export const useAppStore = create<AppState>((set) => ({
     image2: { ...state.image2, markers: state.image2.markers.map(m => m.id === id ? { ...m, color } : m) },
   })),
   
-  updateMarkerPosition: (imageIndex, id, x, y) => set((state) => {
-    if (imageIndex === 1) {
-      return { image1: { ...state.image1, markers: state.image1.markers.map(m => m.id === id ? { ...m, x, y } : m) } };
-    } else {
-      return { image2: { ...state.image2, markers: state.image2.markers.map(m => m.id === id ? { ...m, x, y } : m) } };
-    }
-  }),
+  updateMarkerPosition: (imageIndex, id, x, y) => set((state) =>
+    imageIndex === 1
+      ? { image1: { ...state.image1, markers: state.image1.markers.map(m => m.id === id ? { ...m, x, y } : m) } }
+      : { image2: { ...state.image2, markers: state.image2.markers.map(m => m.id === id ? { ...m, x, y } : m) } },
+  ),
   
   updatePanZoom: (imageIndex, zoom, panX, panY, rotation) => set((state) => {
     if (state.syncPanZoom) {
@@ -100,13 +102,11 @@ export const useAppStore = create<AppState>((set) => ({
     }
   }),
   
-  updateFilters: (imageIndex, brightness, contrast) => set((state) => {
-    if (imageIndex === 1) {
-      return { image1: { ...state.image1, brightness, contrast } };
-    } else {
-      return { image2: { ...state.image2, brightness, contrast } };
-    }
-  }),
+  updateFilters: (imageIndex, brightness, contrast) => set((state) =>
+    imageIndex === 1
+      ? { image1: { ...state.image1, brightness, contrast } }
+      : { image2: { ...state.image2, brightness, contrast } },
+  ),
   
   resetPanZoom: () => set((state) => ({
     image1: { ...state.image1, zoom: 1, panX: 0, panY: 0, rotation: 0, brightness: 100, contrast: 100 },

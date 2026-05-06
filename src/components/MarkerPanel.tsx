@@ -37,7 +37,14 @@ export const MarkerPanel: React.FC = () => {
                 className="bg-slate-700/50 rounded-lg p-3 border border-slate-600/50 flex flex-col gap-3 group transition-colors hover:bg-slate-700 cursor-pointer"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center text-red-400 font-bold text-sm shrink-0 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0"
+                  style={{
+                    backgroundColor: `${color}33`,
+                    border: `2px solid ${color}`,
+                    color,
+                  }}
+                >
                     {label}
                   </div>
                   

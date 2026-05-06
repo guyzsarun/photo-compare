@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { fabric } from 'fabric';
 import { useAppStore } from '../store';
 import { Marker } from '../types';
+import { imageToCanvasCoords, canvasToImageCoords } from '../utils';
 
 interface ImageCanvasProps {
   imageIndex: 1 | 2;
@@ -75,31 +76,16 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
         const pointer = canvas.getPointer(opt.e);
         const img = imageObjRef.current;
 
-        // img.left and img.top are the center of the image on the canvas
-        const imgCenterX = img.left || 0;
-        const imgCenterY = img.top || 0;
-
-        // Translate pointer to be relative to the center of the image
-        const px = pointer.x - imgCenterX;
-        const py = pointer.y - imgCenterY;
-
-        // Un-rotate the coordinates back to 0 degrees to find the original spot
-        const rad = -currentRot * (Math.PI / 180);
-        const rx = px * Math.cos(rad) - py * Math.sin(rad);
-        const ry = px * Math.sin(rad) + py * Math.cos(rad);
-
-        // Scale down to original image resolution and translate to top-left origin
-        const unscaledX = rx / (img.scaleX || 1);
-        const unscaledY = ry / (img.scaleY || 1);
-
-        const originalWidth = img.width || 0;
-        const originalHeight = img.height || 0;
-
-        const x = unscaledX + originalWidth / 2;
-        const y = unscaledY + originalHeight / 2;
+        const { x, y } = canvasToImageCoords(
+          pointer.x, pointer.y,
+          img.left || 0, img.top || 0,
+          img.width || 0, img.height || 0,
+          img.scaleX || 1, img.scaleY || 1,
+          currentRot,
+        );
 
         // Check if click is inside image bounds
-        if (x >= 0 && x <= originalWidth && y >= 0 && y <= originalHeight) {
+        if (x >= 0 && x <= (img.width || 0) && y >= 0 && y <= (img.height || 0)) {
           const allMarkers = [...appState.image1.markers, ...appState.image2.markers];
           const nextNum = allMarkers.length + 1;
 
@@ -352,23 +338,13 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
       const imgCenterX = img.left || 0;
       const imgCenterY = img.top || 0;
 
-      // marker.x and marker.y are from top-left unscaled image. 
-      // Convert to center-relative coordinates
-      const cx = marker.x - (img.width || 0) / 2;
-      const cy = marker.y - (img.height || 0) / 2;
-
-      // Apply scaling
-      const px = cx * (img.scaleX || 1);
-      const py = cy * (img.scaleY || 1);
-
-      // Apply rotation
-      const rad = safeRotation * (Math.PI / 180);
-      const rx = px * Math.cos(rad) - py * Math.sin(rad);
-      const ry = px * Math.sin(rad) + py * Math.cos(rad);
-
-      // Absolute position on canvas
-      const absoluteX = imgCenterX + rx;
-      const absoluteY = imgCenterY + ry;
+      const { x: absoluteX, y: absoluteY } = imageToCanvasCoords(
+        marker.x, marker.y,
+        imgCenterX, imgCenterY,
+        img.width || 0, img.height || 0,
+        img.scaleX || 1, img.scaleY || 1,
+        safeRotation,
+      );
 
       const markerColor = marker.color || '#ef4444';
       const circle = new fabric.Circle({
@@ -392,20 +368,15 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
       circle.on('modified', (e) => {
         const target = e.target;
         if (!target) return;
-        
-        const rx = target.left! - imgCenterX;
-        const ry = target.top! - imgCenterY;
-        
-        const un_rad = -safeRotation * (Math.PI / 180);
-        const px = rx * Math.cos(un_rad) - ry * Math.sin(un_rad);
-        const py = rx * Math.sin(un_rad) + ry * Math.cos(un_rad);
-        
-        const cx = px / (img.scaleX || 1);
-        const cy = py / (img.scaleY || 1);
-        
-        const x = cx + (img.width || 0) / 2;
-        const y = cy + (img.height || 0) / 2;
-        
+
+        const { x, y } = canvasToImageCoords(
+          target.left!, target.top!,
+          img.left || 0, img.top || 0,
+          img.width || 0, img.height || 0,
+          img.scaleX || 1, img.scaleY || 1,
+          safeRotation,
+        );
+
         useAppStore.getState().updateMarkerPosition(imageIndex, marker.id, x, y);
       });
 
@@ -428,22 +399,14 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
       if (marker && fabricRef.current && imageObjRef.current) {
         const canvas = fabricRef.current;
         const img = imageObjRef.current;
-        
-        const imgCenterX = img.left || 0;
-        const imgCenterY = img.top || 0;
 
-        const cx = marker.x - (img.width || 0) / 2;
-        const cy = marker.y - (img.height || 0) / 2;
-
-        const px = cx * (img.scaleX || 1);
-        const py = cy * (img.scaleY || 1);
-
-        const rad = safeRotation * (Math.PI / 180);
-        const rx = px * Math.cos(rad) - py * Math.sin(rad);
-        const ry = px * Math.sin(rad) + py * Math.cos(rad);
-
-        const absoluteX = imgCenterX + rx;
-        const absoluteY = imgCenterY + ry;
+        const { x: absoluteX, y: absoluteY } = imageToCanvasCoords(
+          marker.x, marker.y,
+          img.left || 0, img.top || 0,
+          img.width || 0, img.height || 0,
+          img.scaleX || 1, img.scaleY || 1,
+          safeRotation,
+        );
 
         const currentZoom = canvas.getZoom();
         const targetZoom = Math.max(currentZoom, 4); // Zoom to 4x, or keep current if higher
@@ -451,19 +414,7 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
         const newPanX = (width / 2) - absoluteX * targetZoom;
         const newPanY = (height / 2) - absoluteY * targetZoom;
 
-        console.log(`[ImageCanvas ${imageIndex}] center-marker event!`, {
-          markerId,
-          marker: { x: marker.x, y: marker.y },
-          absolute: { absoluteX, absoluteY },
-          canvasDimensions: { width, height },
-          zoom: targetZoom,
-          newPan: { newPanX, newPanY },
-          currentPan: { panX: canvas.viewportTransform![4], panY: canvas.viewportTransform![5] }
-        });
-
         st.updatePanZoom(imageIndex, targetZoom, newPanX, newPanY, safeRotation);
-      } else {
-        console.log(`[ImageCanvas ${imageIndex}] marker not found or refs missing`, { markerId, hasMarker: !!marker, hasFabric: !!fabricRef.current, hasImg: !!imageObjRef.current });
       }
     };
 

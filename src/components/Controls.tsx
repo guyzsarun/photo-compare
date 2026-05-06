@@ -14,14 +14,9 @@ export const Controls: React.FC = () => {
   const handleZoom = (direction: 'in' | 'out') => {
     const store = useAppStore.getState();
     const factor = direction === 'in' ? 1.2 : 0.8;
-    const newZoom1 = store.image1.zoom * factor;
-    const newZoom2 = store.image2.zoom * factor;
-    
-    if (store.syncPanZoom) {
-      store.updatePanZoom(1, newZoom1, store.image1.panX, store.image1.panY, store.image1.rotation);
-    } else {
-      store.updatePanZoom(1, newZoom1, store.image1.panX, store.image1.panY, store.image1.rotation);
-      store.updatePanZoom(2, newZoom2, store.image2.panX, store.image2.panY, store.image2.rotation);
+    store.updatePanZoom(1, store.image1.zoom * factor, store.image1.panX, store.image1.panY, store.image1.rotation);
+    if (!store.syncPanZoom) {
+      store.updatePanZoom(2, store.image2.zoom * factor, store.image2.panX, store.image2.panY, store.image2.rotation);
     }
   };
 
@@ -72,14 +67,14 @@ export const Controls: React.FC = () => {
       const text = await file.text();
       const data = JSON.parse(text);
       
-      if (data.image1) {
+      if (data.image1 || data.image2) {
         useAppStore.setState(state => ({
-          image1: { ...state.image1, ...data.image1, rotation: data.image1.rotation || 0, markers: data.image1.markers || [] }
-        }));
-      }
-      if (data.image2) {
-        useAppStore.setState(state => ({
-          image2: { ...state.image2, ...data.image2, rotation: data.image2.rotation || 0, markers: data.image2.markers || [] }
+          ...(data.image1 && {
+            image1: { ...state.image1, ...data.image1, rotation: data.image1.rotation || 0, markers: data.image1.markers || [] }
+          }),
+          ...(data.image2 && {
+            image2: { ...state.image2, ...data.image2, rotation: data.image2.rotation || 0, markers: data.image2.markers || [] }
+          }),
         }));
       }
     } catch (err: any) {
