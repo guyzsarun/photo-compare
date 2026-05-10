@@ -36,14 +36,16 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ label, onImageSele
       {...getRootProps()}
       className={clsx(
         'flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors duration-200',
-        isDragActive ? 'border-blue-500 bg-blue-500/10' : 'border-slate-600 hover:border-slate-400 bg-slate-800',
+        isDragActive
+          ? 'border-blue-500 bg-blue-500/10'
+          : 'border-stone-400 dark:border-slate-600 hover:border-stone-500 dark:hover:border-slate-400 bg-stone-100 dark:bg-slate-800',
         className
       )}
     >
       <input {...getInputProps()} />
-      <UploadCloud className="w-12 h-12 mb-4 text-slate-400" />
-      <p className="text-lg font-medium text-slate-200">{label}</p>
-      <p className="text-sm text-slate-400 mt-2 text-center">
+      <UploadCloud className="w-12 h-12 mb-4 text-stone-400 dark:text-slate-400" />
+      <p className="text-lg font-medium text-stone-700 dark:text-slate-200">{label}</p>
+      <p className="text-sm text-stone-500 dark:text-slate-400 mt-2 text-center">
         {isDragActive ? 'Drop the image here...' : 'Drag & drop an image here, or click to select'}
       </p>
     </div>

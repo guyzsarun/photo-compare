@@ -1,1 +1,12 @@
 node_modules
+
+# AI tools
+.agents/
+.cursor/
+.copilot/
+opencode.json
+skills-lock.json
+
+
+dist
+AGENTS.md

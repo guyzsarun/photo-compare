@@ -3,8 +3,18 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --canvas-bg: #f5f5f4;
+    --marker-stroke: #000000;
+  }
+
+  .dark {
+    --canvas-bg: #0f172a;
+    --marker-stroke: #ffffff;
+  }
+
   body {
-    @apply bg-slate-900 text-slate-100;
+    @apply bg-stone-100 text-stone-800 dark:bg-slate-900 dark:text-slate-100;
   }
 }
 

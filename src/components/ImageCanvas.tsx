@@ -14,9 +14,11 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
   const fabricRef = useRef<fabric.Canvas | null>(null);
   const imageObjRef = useRef<fabric.Image | null>(null);
   const [imageLoadedKey, setImageLoadedKey] = useState(0);
+  const [resizeKey, setResizeKey] = useState(0);
 
   const state = useAppStore(s => imageIndex === 1 ? s.image1 : s.image2);
   const isAddingMarker = useAppStore(s => s.isAddingMarker);
+  const theme = useAppStore(s => s.theme);
 
   const safeRotation = state.rotation || 0;
 
@@ -34,7 +36,7 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
       height,
       selection: false,
       renderOnAddRemove: true,
-      backgroundColor: '#0f172a', // slate-900
+      backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg').trim(),
     });
 
     fabricRef.current = canvas;
@@ -48,30 +50,30 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
       if (evt.shiftKey) { // Rotate
         (canvas as any).isRotating = true;
         canvas.selection = false;
-        
+
         const rect = canvas.getElement().getBoundingClientRect();
         const mouseX = evt.clientX - rect.left;
         const mouseY = evt.clientY - rect.top;
-        
+
         const st = useAppStore.getState();
         const currentState = imageIndex === 1 ? st.image1 : st.image2;
         (canvas as any).initialRotation = currentState.rotation || 0;
-        
+
         const vpt = canvas.viewportTransform!;
         const cx = canvas.getWidth() / 2;
         const cy = canvas.getHeight() / 2;
-        
+
         const pivotX = cx * canvas.getZoom() + vpt[4];
         const pivotY = cy * canvas.getZoom() + vpt[5];
-        
+
         (canvas as any).initialAngle = Math.atan2(mouseY - pivotY, mouseX - pivotX);
-        
+
         return;
       }
 
       if (appState.isAddingMarker && imageObjRef.current) {
         if (opt.target && opt.target.name === 'marker') return;
-        
+
         const pointer = canvas.getPointer(opt.e);
         const img = imageObjRef.current;
 
@@ -129,27 +131,27 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
         const rect = canvas.getElement().getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
-        
+
         const vpt = canvas.viewportTransform!;
         const cx = canvas.getWidth() / 2;
         const cy = canvas.getHeight() / 2;
-        
+
         const pivotX = cx * canvas.getZoom() + vpt[4];
         const pivotY = cy * canvas.getZoom() + vpt[5];
-        
+
         const currentAngle = Math.atan2(mouseY - pivotY, mouseX - pivotX);
         let deltaTheta = (currentAngle - (canvas as any).initialAngle) * (180 / Math.PI);
-        
+
         if (deltaTheta > 180) deltaTheta -= 360;
         if (deltaTheta < -180) deltaTheta += 360;
-        
+
         let newRot = (canvas as any).initialRotation + deltaTheta;
         if (newRot > 180) newRot -= 360;
         if (newRot < -180) newRot += 360;
-        
+
         const st = useAppStore.getState();
         st.updatePanZoom(imageIndex, canvas.getZoom(), vpt[4], vpt[5], newRot);
-        
+
         // Update visually immediately for smoothness
         if (imageObjRef.current) {
           imageObjRef.current.set({ angle: newRot });
@@ -189,34 +191,34 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
         // Rotate around mouse
         const delta = e.deltaY;
         const deltaTheta = delta * 0.1; // 0.1 degrees per scroll unit
-        
+
         let newRot = (currentState.rotation || 0) + deltaTheta;
         if (newRot > 180) newRot -= 360;
         if (newRot < -180) newRot += 360;
-        
+
         const vpt = canvas.viewportTransform!;
         const cx = canvas.getWidth() / 2;
         const cy = canvas.getHeight() / 2;
         const pivotX = cx * canvas.getZoom() + vpt[4];
         const pivotY = cy * canvas.getZoom() + vpt[5];
-        
+
         const rect = canvas.getElement().getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
-        
+
         const Vx = mouseX - pivotX;
         const Vy = mouseY - pivotY;
-        
+
         const rad = deltaTheta * (Math.PI / 180);
         const cos = Math.cos(rad);
         const sin = Math.sin(rad);
-        
+
         const VprimeX = Vx * cos - Vy * sin;
         const VprimeY = Vx * sin + Vy * cos;
-        
+
         const newPanX = vpt[4] + (Vx - VprimeX);
         const newPanY = vpt[5] + (Vy - VprimeY);
-        
+
         st.updatePanZoom(imageIndex, canvas.getZoom(), newPanX, newPanY, newRot);
       } else {
         // Zoom around mouse
@@ -227,13 +229,32 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
         if (zoom < 0.1) zoom = 0.1;
 
         canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
-        
+
         const vpt = canvas.viewportTransform!;
         st.updatePanZoom(imageIndex, canvas.getZoom(), vpt[4], vpt[5], currentState.rotation || 0);
       }
     });
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      if (
+        document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA'
+      ) return;
+
+      const active = fabricRef.current?.getActiveObject();
+      if (active && (active as any).name === 'marker') {
+        const markerId = (active as any).data?.markerId;
+        if (markerId) {
+          useAppStore.getState().removeMarker(markerId);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
     return () => {
+      window.removeEventListener('keydown', handleKeyDown);
       canvas.dispose();
       fabricRef.current = null;
       if (containerRef.current) {
@@ -261,8 +282,18 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
         scaleY: scale,
       });
       canvas.requestRenderAll();
+      setResizeKey(k => k + 1); // Trigger marker re-render after image repositioned
     }
   }, [width, height]);
+
+  // Update canvas background when theme changes
+  useEffect(() => {
+    if (!fabricRef.current) return;
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg').trim();
+    fabricRef.current.setBackgroundColor(bg, () => {
+      fabricRef.current?.requestRenderAll();
+    });
+  }, [theme]);
 
   // Load image natively to ensure it loads before passing to Fabric
   useEffect(() => {
@@ -352,7 +383,7 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
       const imgCenterX = img.left || 0;
       const imgCenterY = img.top || 0;
 
-      // marker.x and marker.y are from top-left unscaled image. 
+      // marker.x and marker.y are from top-left unscaled image.
       // Convert to center-relative coordinates
       const cx = marker.x - (img.width || 0) / 2;
       const cy = marker.y - (img.height || 0) / 2;
@@ -371,10 +402,11 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
       const absoluteY = imgCenterY + ry;
 
       const markerColor = marker.color || '#ef4444';
+      const markerStroke = getComputedStyle(document.documentElement).getPropertyValue('--marker-stroke').trim();
       const circle = new fabric.Circle({
         radius: 0.3,
         fill: markerColor,
-        stroke: '#ffffff',
+        stroke: markerStroke,
         strokeWidth: 0.05,
         left: absoluteX,
         top: absoluteY,
@@ -387,25 +419,26 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
         hoverCursor: 'move',
         moveCursor: 'move',
         name: 'marker',
+        data: { markerId: marker.id },
       });
-      
+
       circle.on('modified', (e) => {
         const target = e.target;
         if (!target) return;
-        
+
         const rx = target.left! - imgCenterX;
         const ry = target.top! - imgCenterY;
-        
+
         const un_rad = -safeRotation * (Math.PI / 180);
         const px = rx * Math.cos(un_rad) - ry * Math.sin(un_rad);
         const py = rx * Math.sin(un_rad) + ry * Math.cos(un_rad);
-        
+
         const cx = px / (img.scaleX || 1);
         const cy = py / (img.scaleY || 1);
-        
+
         const x = cx + (img.width || 0) / 2;
         const y = cy + (img.height || 0) / 2;
-        
+
         useAppStore.getState().updateMarkerPosition(imageIndex, marker.id, x, y);
       });
 
@@ -413,22 +446,22 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
     });
 
     canvas.requestRenderAll();
-  }, [state.markers, state.dataUrl, safeRotation, imageLoadedKey]);
+  }, [state.markers, state.dataUrl, safeRotation, imageLoadedKey, theme, width, height, resizeKey]);
 
   // Handle snapping to marker
   useEffect(() => {
     const handleCenterMarker = (e: Event) => {
       const customEvent = e as CustomEvent<{ id: string }>;
       const markerId = customEvent.detail.id;
-      
+
       const st = useAppStore.getState();
       const currentState = imageIndex === 1 ? st.image1 : st.image2;
       const marker = currentState.markers.find(m => m.id === markerId);
-      
+
       if (marker && fabricRef.current && imageObjRef.current) {
         const canvas = fabricRef.current;
         const img = imageObjRef.current;
-        
+
         const imgCenterX = img.left || 0;
         const imgCenterY = img.top || 0;
 
@@ -447,7 +480,7 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
 
         const currentZoom = canvas.getZoom();
         const targetZoom = Math.max(currentZoom, 4); // Zoom to 4x, or keep current if higher
-        
+
         const newPanX = (width / 2) - absoluteX * targetZoom;
         const newPanY = (height / 2) - absoluteY * targetZoom;
 
