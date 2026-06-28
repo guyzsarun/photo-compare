@@ -1,7 +1,16 @@
 import React from 'react';
 import { useAppStore } from '../store';
-import { MapPin, Link2, ZoomIn, ZoomOut, Maximize, Trash2, Download, Upload, Sun, Moon } from 'lucide-react';
+import { MapPin, Link2, ZoomIn, ZoomOut, Maximize, Trash2, Download, Upload, Sun, Moon, Image as ImageIcon } from 'lucide-react';
 import clsx from 'clsx';
+
+const loadImage = (src: string): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = (e) => reject(e);
+    img.src = src;
+  });
+};
 
 export const Controls: React.FC = () => {
   const {
@@ -10,6 +19,7 @@ export const Controls: React.FC = () => {
     resetPanZoom, clearImages, clearMarkers,
     image1, image2, projectFileHandle, setProjectFileHandle,
     theme, toggleTheme,
+    markerSize,
   } = useAppStore();
 
   const handleZoom = (direction: 'in' | 'out') => {
@@ -91,6 +101,167 @@ export const Controls: React.FC = () => {
     }
   };
 
+  const handleExportJPG = async () => {
+    if (!image1.dataUrl && !image2.dataUrl) {
+      alert("No images are loaded to export.");
+      return;
+    }
+
+    try {
+      let img1: HTMLImageElement | null = null;
+      let img2: HTMLImageElement | null = null;
+
+      if (image1.dataUrl) {
+        img1 = await loadImage(image1.dataUrl);
+      }
+      if (image2.dataUrl) {
+        img2 = await loadImage(image2.dataUrl);
+      }
+
+      let w1 = 0, h1 = 0;
+      let w2 = 0, h2 = 0;
+      
+      let rot1Width = 0, rot1Height = 0;
+      let rot2Width = 0, rot2Height = 0;
+
+      const rad1 = ((image1.rotation || 0) * Math.PI) / 180;
+      const rad2 = ((image2.rotation || 0) * Math.PI) / 180;
+
+      if (img1) {
+        const absCos1 = Math.abs(Math.cos(rad1));
+        const absSin1 = Math.abs(Math.sin(rad1));
+        rot1Width = Math.round(img1.width * absCos1 + img1.height * absSin1);
+        rot1Height = Math.round(img1.width * absSin1 + img1.height * absCos1);
+        w1 = rot1Width;
+        h1 = rot1Height;
+      }
+
+      if (img2) {
+        const absCos2 = Math.abs(Math.cos(rad2));
+        const absSin2 = Math.abs(Math.sin(rad2));
+        rot2Width = Math.round(img2.width * absCos2 + img2.height * absSin2);
+        rot2Height = Math.round(img2.width * absSin2 + img2.height * absCos2);
+        w2 = rot2Width;
+        h2 = rot2Height;
+      }
+
+      const exportWidth = w1 + w2;
+      const exportHeight = Math.max(h1, h2);
+
+      if (exportWidth === 0 || exportHeight === 0) {
+        alert("Failed to determine dimensions for the export image.");
+        return;
+      }
+
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = exportWidth;
+      exportCanvas.height = exportHeight;
+
+      const ctx = exportCanvas.getContext('2d');
+      if (!ctx) {
+        alert("Failed to create 2D context for export.");
+        return;
+      }
+
+      // Fill background color
+      const bg = getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg').trim() || '#f5f5f4';
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, exportWidth, exportHeight);
+
+      // Y offset to vertically center the frame in the export canvas
+      const offsetY1 = Math.max(0, (exportHeight - h1) / 2);
+      const offsetY2 = Math.max(0, (exportHeight - h2) / 2);
+
+      // Draw Reference Canvas (image1)
+      if (img1) {
+        ctx.save();
+        ctx.translate(rot1Width / 2, offsetY1 + rot1Height / 2);
+        ctx.rotate(rad1);
+        ctx.filter = `brightness(${image1.brightness ?? 100}%) contrast(${image1.contrast ?? 100}%)`;
+        ctx.drawImage(img1, -img1.width / 2, -img1.height / 2, img1.width, img1.height);
+        ctx.restore();
+
+        // Draw markers for image 1 (unfiltered)
+        ctx.save();
+        ctx.translate(rot1Width / 2, offsetY1 + rot1Height / 2);
+        ctx.rotate(rad1);
+        ctx.filter = 'none';
+
+        const radius = (0.3 / (image1.fitScale || 1)) * markerSize;
+        (image1.markers || []).forEach(marker => {
+          const mx = marker.x - img1.width / 2;
+          const my = marker.y - img1.height / 2;
+          const color = marker.color || '#ef4444';
+
+          ctx.beginPath();
+          ctx.arc(mx, my, radius, 0, 2 * Math.PI);
+          ctx.fillStyle = color;
+          ctx.fill();
+          ctx.lineWidth = radius / 6;
+          ctx.strokeStyle = '#ffffff';
+          ctx.stroke();
+        });
+        ctx.restore();
+      }
+
+      // Draw Comparison Canvas (image2)
+      const offsetX2 = w1; // rot1Width if img1 is drawn, 0 otherwise
+      if (img2) {
+        ctx.save();
+        ctx.translate(offsetX2 + rot2Width / 2, offsetY2 + rot2Height / 2);
+        ctx.rotate(rad2);
+        ctx.filter = `brightness(${image2.brightness ?? 100}%) contrast(${image2.contrast ?? 100}%)`;
+        ctx.drawImage(img2, -img2.width / 2, -img2.height / 2, img2.width, img2.height);
+        ctx.restore();
+
+        // Draw markers for image 2 (unfiltered)
+        ctx.save();
+        ctx.translate(offsetX2 + rot2Width / 2, offsetY2 + rot2Height / 2);
+        ctx.rotate(rad2);
+        ctx.filter = 'none';
+
+        const radius = (0.3 / (image2.fitScale || 1)) * markerSize;
+        (image2.markers || []).forEach(marker => {
+          const mx = marker.x - img2.width / 2;
+          const my = marker.y - img2.height / 2;
+          const color = marker.color || '#ef4444';
+
+          ctx.beginPath();
+          ctx.arc(mx, my, radius, 0, 2 * Math.PI);
+          ctx.fillStyle = color;
+          ctx.fill();
+          ctx.lineWidth = radius / 6;
+          ctx.strokeStyle = '#ffffff';
+          ctx.stroke();
+        });
+        ctx.restore();
+      }
+
+      const dataUrl = exportCanvas.toDataURL('image/jpeg', 0.9);
+      
+      let filename = 'photo-compare-export.jpg';
+      if (image1.file && image2.file) {
+        const name1 = image1.file.name.substring(0, image1.file.name.lastIndexOf('.')) || image1.file.name;
+        const name2 = image2.file.name.substring(0, image2.file.name.lastIndexOf('.')) || image2.file.name;
+        filename = `compare_${name1}_vs_${name2}.jpg`;
+      } else if (image1.file) {
+        const name1 = image1.file.name.substring(0, image1.file.name.lastIndexOf('.')) || image1.file.name;
+        filename = `compare_${name1}.jpg`;
+      } else if (image2.file) {
+        const name2 = image2.file.name.substring(0, image2.file.name.lastIndexOf('.')) || image2.file.name;
+        filename = `compare_${name2}.jpg`;
+      }
+
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Failed to export JPEG:', err);
+      alert('Failed to export JPEG image.');
+    }
+  };
+
   const hasImages = image1.dataUrl || image2.dataUrl;
 
   return (
@@ -117,6 +288,15 @@ export const Controls: React.FC = () => {
           title="Load Project"
         >
           <Upload size={16} /> Load
+        </button>
+
+        <button
+          onClick={handleExportJPG}
+          disabled={!hasImages}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-stone-300 dark:bg-slate-700 text-stone-700 dark:text-slate-300 hover:bg-stone-400 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+          title="Save JPG of reference and comparison image with markers"
+        >
+          <ImageIcon size={16} /> Export JPG
         </button>
       </div>
 

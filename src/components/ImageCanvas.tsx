@@ -19,6 +19,7 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
   const state = useAppStore(s => imageIndex === 1 ? s.image1 : s.image2);
   const isAddingMarker = useAppStore(s => s.isAddingMarker);
   const theme = useAppStore(s => s.theme);
+  const markerSize = useAppStore(s => s.markerSize);
 
   const safeRotation = state.rotation || 0;
 
@@ -29,6 +30,7 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
     // Create canvas dynamically to avoid React DOM reconciliation conflicts with Fabric
     containerRef.current.innerHTML = '';
     const canvasEl = document.createElement('canvas');
+    canvasEl.setAttribute('data-image-index', imageIndex.toString());
     containerRef.current.appendChild(canvasEl);
 
     const canvas = new fabric.Canvas(canvasEl, {
@@ -312,6 +314,7 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
 
       // Center and scale image
       const scale = Math.min(width / img.width!, height / img.height!);
+      useAppStore.getState().updateFitScale(imageIndex, scale);
       img.set({
         originX: 'center',
         originY: 'center',
@@ -404,10 +407,10 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
       const markerColor = marker.color || '#ef4444';
       const markerStroke = getComputedStyle(document.documentElement).getPropertyValue('--marker-stroke').trim();
       const circle = new fabric.Circle({
-        radius: 0.3,
+        radius: 0.3 * markerSize,
         fill: markerColor,
         stroke: markerStroke,
-        strokeWidth: 0.05,
+        strokeWidth: 0.05 * markerSize,
         left: absoluteX,
         top: absoluteY,
         originX: 'center',
@@ -446,7 +449,7 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
     });
 
     canvas.requestRenderAll();
-  }, [state.markers, state.dataUrl, safeRotation, imageLoadedKey, theme, width, height, resizeKey]);
+  }, [state.markers, state.dataUrl, safeRotation, imageLoadedKey, theme, width, height, resizeKey, markerSize]);
 
   // Handle snapping to marker
   useEffect(() => {
