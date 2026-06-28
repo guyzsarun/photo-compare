@@ -6,6 +6,7 @@ interface AppState {
   image2: ImageState;
   isAddingMarker: boolean;
   syncPanZoom: boolean; // Now syncs pan, zoom, and rotate
+  markerSize: number;
   projectFileHandle: any;
   theme: 'dark' | 'light';
 
@@ -16,6 +17,7 @@ interface AppState {
   toggleAddingMarker: () => void;
   toggleSyncPanZoom: () => void;
   toggleTheme: () => void;
+  setMarkerSize: (size: number) => void;
 
   addMarker: (imageIndex: 1 | 2, marker: Marker) => void;
   removeMarker: (id: string) => void;
@@ -25,6 +27,7 @@ interface AppState {
 
   updatePanZoom: (imageIndex: 1 | 2, zoom: number, panX: number, panY: number, rotation: number) => void;
   updateFilters: (imageIndex: 1 | 2, brightness: number, contrast: number) => void;
+  updateFitScale: (imageIndex: 1 | 2, fitScale: number) => void;
   resetPanZoom: () => void;
   clearImages: () => void;
   clearMarkers: () => void;
@@ -40,6 +43,7 @@ const initialImageState: ImageState = {
   rotation: 0,
   brightness: 100, // percentage for CSS filter
   contrast: 100, // percentage for CSS filter
+  fitScale: 1,
 };
 
 export const useAppStore = create<AppState>((set) => ({
@@ -47,6 +51,7 @@ export const useAppStore = create<AppState>((set) => ({
   image2: { ...initialImageState },
   isAddingMarker: false,
   syncPanZoom: false, // Default to independent, per user request
+  markerSize: 1,
   projectFileHandle: null,
   theme: (document.documentElement.classList.contains('dark') ? 'dark' : 'light') as 'dark' | 'light',
 
@@ -56,6 +61,7 @@ export const useAppStore = create<AppState>((set) => ({
 
   toggleAddingMarker: () => set((state) => ({ isAddingMarker: !state.isAddingMarker })),
   toggleSyncPanZoom: () => set((state) => ({ syncPanZoom: !state.syncPanZoom })),
+  setMarkerSize: (size) => set({ markerSize: size }),
   toggleTheme: () => set((state) => {
     const next = state.theme === 'dark' ? 'light' : 'dark';
     if (next === 'dark') {
@@ -118,6 +124,14 @@ export const useAppStore = create<AppState>((set) => ({
       return { image1: { ...state.image1, brightness, contrast } };
     } else {
       return { image2: { ...state.image2, brightness, contrast } };
+    }
+  }),
+
+  updateFitScale: (imageIndex, fitScale) => set((state) => {
+    if (imageIndex === 1) {
+      return { image1: { ...state.image1, fitScale } };
+    } else {
+      return { image2: { ...state.image2, fitScale } };
     }
   }),
 

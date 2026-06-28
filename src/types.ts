@@ -16,4 +16,5 @@ export interface ImageState {
   rotation: number;
   brightness: number;
   contrast: number;
+  fitScale: number; // scale applied to fit the image into the canvas viewport
 }

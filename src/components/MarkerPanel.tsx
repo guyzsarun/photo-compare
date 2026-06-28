@@ -8,7 +8,7 @@ interface MarkerPanelProps {
 }
 
 export const MarkerPanel: React.FC<MarkerPanelProps> = ({ collapsed, onToggle }) => {
-  const { image1, image2, removeMarker, updateMarkerLabel, updateMarkerColor } = useAppStore();
+  const { image1, image2, removeMarker, updateMarkerLabel, updateMarkerColor, markerSize, setMarkerSize } = useAppStore();
 
   // Combine markers from both images or just show them grouped
   const markers1 = image1.markers;
@@ -41,9 +41,24 @@ export const MarkerPanel: React.FC<MarkerPanelProps> = ({ collapsed, onToggle })
   return (
     <div className="w-80 bg-stone-50 dark:bg-slate-800 border-l border-stone-300 dark:border-slate-700 flex flex-col h-full shadow-xl z-10 overflow-hidden">
       <div className="p-4 border-b border-stone-300 dark:border-slate-700 flex items-start justify-between">
-        <div>
+        <div className="flex-1 min-w-0 pr-2">
           <h2 className="text-lg font-semibold text-stone-800 dark:text-slate-100">Markers</h2>
           <p className="text-sm text-stone-500 dark:text-slate-400">Click on image to add markers</p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-xs text-stone-500 dark:text-slate-400 shrink-0">Size:</span>
+            <input
+              type="range"
+              min="0.5"
+              max="3"
+              step="0.1"
+              value={markerSize}
+              onChange={(e) => setMarkerSize(Number(e.target.value))}
+              className="flex-1 h-1.5 accent-blue-500 cursor-pointer"
+            />
+            <span className="text-xs text-stone-500 dark:text-slate-400 w-8 text-right shrink-0">
+              {markerSize.toFixed(1)}×
+            </span>
+          </div>
         </div>
         <button
           onClick={onToggle}
