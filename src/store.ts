@@ -9,7 +9,6 @@ interface AppState {
   markerSize1: number;
   markerSize2: number;
   projectFileHandle: any;
-  theme: 'dark' | 'light';
 
   setImage1File: (file: File, dataUrl: string) => void;
   setImage2File: (file: File, dataUrl: string) => void;
@@ -17,7 +16,6 @@ interface AppState {
 
   toggleAddingMarker: () => void;
   toggleSyncPanZoom: () => void;
-  toggleTheme: () => void;
   setMarkerSize: (imageIndex: 1 | 2, size: number) => void;
 
   addMarker: (imageIndex: 1 | 2, marker: Marker) => void;
@@ -55,7 +53,6 @@ export const useAppStore = create<AppState>((set) => ({
   markerSize1: 1,
   markerSize2: 1,
   projectFileHandle: null,
-  theme: (document.documentElement.classList.contains('dark') ? 'dark' : 'light') as 'dark' | 'light',
 
   setImage1File: (file, dataUrl) => set((state) => ({ image1: { ...state.image1, file, dataUrl, markers: [] } })),
   setImage2File: (file, dataUrl) => set((state) => ({ image2: { ...state.image2, file, dataUrl, markers: [] } })),
@@ -64,16 +61,6 @@ export const useAppStore = create<AppState>((set) => ({
   toggleAddingMarker: () => set((state) => ({ isAddingMarker: !state.isAddingMarker })),
   toggleSyncPanZoom: () => set((state) => ({ syncPanZoom: !state.syncPanZoom })),
   setMarkerSize: (imageIndex, size) => set(imageIndex === 1 ? { markerSize1: size } : { markerSize2: size }),
-  toggleTheme: () => set((state) => {
-    const next = state.theme === 'dark' ? 'light' : 'dark';
-    if (next === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('theme', next);
-    return { theme: next };
-  }),
 
   addMarker: (imageIndex, marker) => set((state) => {
     if (imageIndex === 1) {

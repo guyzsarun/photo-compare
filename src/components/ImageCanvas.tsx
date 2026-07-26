@@ -25,7 +25,6 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
 
   const state = useAppStore(s => imageIndex === 1 ? s.image1 : s.image2);
   const isAddingMarker = useAppStore(s => s.isAddingMarker);
-  const theme = useAppStore(s => s.theme);
   const markerSize = useAppStore(s => imageIndex === 1 ? s.markerSize1 : s.markerSize2);
 
   const safeRotation = state.rotation || 0;
@@ -295,15 +294,6 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
     }
   }, [width, height]);
 
-  // Update canvas background when theme changes
-  useEffect(() => {
-    if (!fabricRef.current) return;
-    const bg = getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg').trim();
-    fabricRef.current.setBackgroundColor(bg, () => {
-      fabricRef.current?.requestRenderAll();
-    });
-  }, [theme]);
-
   // Load image natively to ensure it loads before passing to Fabric
   useEffect(() => {
     if (!fabricRef.current || !state.dataUrl) return;
@@ -493,7 +483,7 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
     });
 
     canvas.requestRenderAll();
-  }, [state.markers, state.dataUrl, safeRotation, imageLoadedKey, theme, width, height, resizeKey, markerSize]);
+  }, [state.markers, state.dataUrl, safeRotation, imageLoadedKey, width, height, resizeKey, markerSize]);
 
   // Handle snapping to marker
   useEffect(() => {
@@ -531,19 +521,7 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
         const newPanX = (width / 2) - absoluteX * targetZoom;
         const newPanY = (height / 2) - absoluteY * targetZoom;
 
-        console.log(`[ImageCanvas ${imageIndex}] center-marker event!`, {
-          markerId,
-          marker: { x: marker.x, y: marker.y },
-          absolute: { absoluteX, absoluteY },
-          canvasDimensions: { width, height },
-          zoom: targetZoom,
-          newPan: { newPanX, newPanY },
-          currentPan: { panX: canvas.viewportTransform![4], panY: canvas.viewportTransform![5] }
-        });
-
         st.updatePanZoom(imageIndex, targetZoom, newPanX, newPanY, safeRotation);
-      } else {
-        console.log(`[ImageCanvas ${imageIndex}] marker not found or refs missing`, { markerId, hasMarker: !!marker, hasFabric: !!fabricRef.current, hasImg: !!imageObjRef.current });
       }
     };
 
@@ -557,7 +535,7 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
     <div
       ref={containerRef}
       style={{ filter: `brightness(${state.brightness ?? 100}%) contrast(${state.contrast ?? 100}%)` }}
-      className={`relative rounded border border-slate-700 overflow-hidden ${isAddingMarker ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'}`}
+      className={`relative rounded-lg border border-line overflow-hidden ${isAddingMarker ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'}`}
     />
   );
 };

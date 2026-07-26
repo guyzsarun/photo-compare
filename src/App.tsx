@@ -49,56 +49,59 @@ function App() {
   }, [toggleAddingMarker]);
 
   return (
-    <div className="flex flex-col h-screen bg-stone-100 dark:bg-slate-900 text-stone-800 dark:text-slate-100 font-sans overflow-hidden">
+    <div className="flex flex-col h-screen bg-base text-content font-sans overflow-hidden">
       <Controls />
 
       <div className="flex flex-1 overflow-hidden relative">
-        <div className="flex-1 flex gap-4 p-4 overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-stone-200 dark:from-slate-800 to-stone-100 dark:to-slate-900">
+        <div className="flex-1 flex gap-4 p-4 overflow-hidden bg-base">
 
           {/* Image 1 Container */}
-          <div className="flex-1 flex flex-col h-full bg-stone-50/50 dark:bg-slate-800/50 rounded-xl border border-stone-300/50 dark:border-slate-700/50 shadow-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 hover:border-stone-400/50 dark:hover:border-slate-600/50">
-            <div className="p-3 border-b border-stone-300/50 dark:border-slate-700/50 bg-stone-50/80 dark:bg-slate-800/80 flex justify-between items-center">
+          <div className="flex-1 flex flex-col h-full bg-elevated rounded-xl border border-line overflow-hidden transition-colors duration-300 hover:border-[#3a3a3a]">
+            <div className="p-3 border-b border-line bg-elevated flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <h2 className="font-semibold text-blue-500 dark:text-blue-400">Reference Image</h2>
+                <h2 className="flex items-center gap-2 font-display font-bold text-content">
+                  <span className="text-[10px] uppercase tracking-widest text-muted font-semibold">A</span>
+                  Reference
+                </h2>
                 {image1.dataUrl && (
-                  <div className="flex flex-col gap-1.5 ml-4 border-l border-stone-300/50 dark:border-slate-700/50 pl-4">
+                  <div className="flex flex-col gap-1.5 ml-4 border-l border-line pl-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-stone-500 dark:text-slate-400 w-12">Rotate:</span>
+                      <span className="text-xs text-muted w-12">Rotate</span>
                       <input
                         type="range" min="-180" max="180" step="0.5"
                         value={image1.rotation}
                         onChange={(e) => useAppStore.getState().updatePanZoom(1, image1.zoom, image1.panX, image1.panY, Number(e.target.value))}
-                        className="w-16 accent-blue-500"
+                        className="w-16 accent-accent"
                       />
-                      <span className="text-xs text-stone-500 dark:text-slate-400 w-8 text-right">{image1.rotation.toFixed(0)}°</span>
-                      <button onClick={() => useAppStore.getState().updatePanZoom(1, image1.zoom, image1.panX, image1.panY, 0)} className="text-xs px-1.5 py-0 border border-stone-400 dark:border-slate-600 hover:bg-stone-200 dark:hover:bg-slate-700 rounded text-stone-600 dark:text-slate-300" title="Reset Rotation">⟲</button>
+                      <span className="text-xs text-muted w-8 text-right tabular-nums">{image1.rotation.toFixed(0)}°</span>
+                      <button onClick={() => useAppStore.getState().updatePanZoom(1, image1.zoom, image1.panX, image1.panY, 0)} className="text-xs px-1.5 py-0 border border-line hover:bg-raised rounded text-muted hover:text-content transition-colors" title="Reset rotation">⟲</button>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-stone-500 dark:text-slate-400 w-12">Filter:</span>
+                      <span className="text-xs text-muted w-12">Filter</span>
                       <input
                         type="range" min="0" max="200" step="1"
                         value={image1.brightness ?? 100}
                         onChange={(e) => useAppStore.getState().updateFilters(1, Number(e.target.value), image1.contrast ?? 100)}
-                        className="w-16 accent-yellow-500"
+                        className="w-16 accent-accent"
                         title={`Brightness: ${image1.brightness ?? 100}%`}
                       />
                       <input
                         type="range" min="0" max="200" step="1"
                         value={image1.contrast ?? 100}
                         onChange={(e) => useAppStore.getState().updateFilters(1, image1.brightness ?? 100, Number(e.target.value))}
-                        className="w-16 accent-purple-500"
+                        className="w-16 accent-accent"
                         title={`Contrast: ${image1.contrast ?? 100}%`}
                       />
-                      <button onClick={() => useAppStore.getState().updateFilters(1, 100, 100)} className="text-xs px-1.5 py-0 border border-stone-400 dark:border-slate-600 hover:bg-stone-200 dark:hover:bg-slate-700 rounded text-stone-600 dark:text-slate-300" title="Reset Filters">⟲</button>
+                      <button onClick={() => useAppStore.getState().updateFilters(1, 100, 100)} className="text-xs px-1.5 py-0 border border-line hover:bg-raised rounded text-muted hover:text-content transition-colors" title="Reset filters">⟲</button>
                     </div>
                   </div>
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {image1.file && <span className="text-xs text-stone-500 dark:text-slate-400 truncate max-w-[150px]">{image1.file.name}</span>}
-                {!image1.file && image1.dataUrl && <span className="text-xs text-stone-500 dark:text-slate-400 truncate max-w-[150px]">(Loaded Project)</span>}
+                {image1.file && <span className="text-xs text-muted truncate max-w-[150px]">{image1.file.name}</span>}
+                {!image1.file && image1.dataUrl && <span className="text-xs text-muted truncate max-w-[150px]">(Loaded project)</span>}
                 {image1.dataUrl && (
-                  <label className="cursor-pointer text-xs px-2 py-1 bg-stone-200 dark:bg-slate-700 hover:bg-stone-300 dark:hover:bg-slate-600 rounded text-stone-700 dark:text-slate-200 flex items-center gap-1 transition-colors" title="Change Image">
+                  <label className="cursor-pointer text-xs px-3 py-1 bg-raised hover:bg-[#3a3a3a] rounded-full text-content flex items-center gap-1 transition-colors" title="Change image">
                     <Upload size={12} />
                     <span>Change</span>
                     <input
@@ -123,10 +126,10 @@ function App() {
                 )}
               </div>
             </div>
-            <div className="flex-1 flex items-center justify-center p-4 relative bg-black/5 dark:bg-black/20">
+            <div className="flex-1 flex items-center justify-center p-4 relative bg-overlay">
               {!image1.dataUrl ? (
                 <ImageUploader
-                  label="Upload Reference Image"
+                  label="Upload reference image"
                   onImageSelected={setImage1File}
                   className="w-full max-w-md"
                 />
@@ -137,49 +140,52 @@ function App() {
           </div>
 
           {/* Image 2 Container */}
-          <div className="flex-1 flex flex-col h-full bg-stone-50/50 dark:bg-slate-800/50 rounded-xl border border-stone-300/50 dark:border-slate-700/50 shadow-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 hover:border-stone-400/50 dark:hover:border-slate-600/50">
-            <div className="p-3 border-b border-stone-300/50 dark:border-slate-700/50 bg-stone-50/80 dark:bg-slate-800/80 flex justify-between items-center">
+          <div className="flex-1 flex flex-col h-full bg-elevated rounded-xl border border-line overflow-hidden transition-colors duration-300 hover:border-[#3a3a3a]">
+            <div className="p-3 border-b border-line bg-elevated flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <h2 className="font-semibold text-purple-500 dark:text-purple-400">Comparison Image</h2>
+                <h2 className="flex items-center gap-2 font-display font-bold text-content">
+                  <span className="text-[10px] uppercase tracking-widest text-muted font-semibold">B</span>
+                  Comparison
+                </h2>
                 {image2.dataUrl && (
-                  <div className="flex flex-col gap-1.5 ml-4 border-l border-stone-300/50 dark:border-slate-700/50 pl-4">
+                  <div className="flex flex-col gap-1.5 ml-4 border-l border-line pl-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-stone-500 dark:text-slate-400 w-12">Rotate:</span>
+                      <span className="text-xs text-muted w-12">Rotate</span>
                       <input
                         type="range" min="-180" max="180" step="0.5"
                         value={image2.rotation}
                         onChange={(e) => useAppStore.getState().updatePanZoom(2, image2.zoom, image2.panX, image2.panY, Number(e.target.value))}
-                        className="w-16 accent-purple-500"
+                        className="w-16 accent-accent"
                       />
-                      <span className="text-xs text-stone-500 dark:text-slate-400 w-8 text-right">{image2.rotation.toFixed(0)}°</span>
-                      <button onClick={() => useAppStore.getState().updatePanZoom(2, image2.zoom, image2.panX, image2.panY, 0)} className="text-xs px-1.5 py-0 border border-stone-400 dark:border-slate-600 hover:bg-stone-200 dark:hover:bg-slate-700 rounded text-stone-600 dark:text-slate-300" title="Reset Rotation">⟲</button>
+                      <span className="text-xs text-muted w-8 text-right tabular-nums">{image2.rotation.toFixed(0)}°</span>
+                      <button onClick={() => useAppStore.getState().updatePanZoom(2, image2.zoom, image2.panX, image2.panY, 0)} className="text-xs px-1.5 py-0 border border-line hover:bg-raised rounded text-muted hover:text-content transition-colors" title="Reset rotation">⟲</button>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-stone-500 dark:text-slate-400 w-12">Filter:</span>
+                      <span className="text-xs text-muted w-12">Filter</span>
                       <input
                         type="range" min="0" max="200" step="1"
                         value={image2.brightness ?? 100}
                         onChange={(e) => useAppStore.getState().updateFilters(2, Number(e.target.value), image2.contrast ?? 100)}
-                        className="w-16 accent-yellow-500"
+                        className="w-16 accent-accent"
                         title={`Brightness: ${image2.brightness ?? 100}%`}
                       />
                       <input
                         type="range" min="0" max="200" step="1"
                         value={image2.contrast ?? 100}
                         onChange={(e) => useAppStore.getState().updateFilters(2, image2.brightness ?? 100, Number(e.target.value))}
-                        className="w-16 accent-purple-500"
+                        className="w-16 accent-accent"
                         title={`Contrast: ${image2.contrast ?? 100}%`}
                       />
-                      <button onClick={() => useAppStore.getState().updateFilters(2, 100, 100)} className="text-xs px-1.5 py-0 border border-stone-400 dark:border-slate-600 hover:bg-stone-200 dark:hover:bg-slate-700 rounded text-stone-600 dark:text-slate-300" title="Reset Filters">⟲</button>
+                      <button onClick={() => useAppStore.getState().updateFilters(2, 100, 100)} className="text-xs px-1.5 py-0 border border-line hover:bg-raised rounded text-muted hover:text-content transition-colors" title="Reset filters">⟲</button>
                     </div>
                   </div>
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {image2.file && <span className="text-xs text-stone-500 dark:text-slate-400 truncate max-w-[150px]">{image2.file.name}</span>}
-                {!image2.file && image2.dataUrl && <span className="text-xs text-stone-500 dark:text-slate-400 truncate max-w-[150px]">(Loaded Project)</span>}
+                {image2.file && <span className="text-xs text-muted truncate max-w-[150px]">{image2.file.name}</span>}
+                {!image2.file && image2.dataUrl && <span className="text-xs text-muted truncate max-w-[150px]">(Loaded project)</span>}
                 {image2.dataUrl && (
-                  <label className="cursor-pointer text-xs px-2 py-1 bg-stone-200 dark:bg-slate-700 hover:bg-stone-300 dark:hover:bg-slate-600 rounded text-stone-700 dark:text-slate-200 flex items-center gap-1 transition-colors" title="Change Image">
+                  <label className="cursor-pointer text-xs px-3 py-1 bg-raised hover:bg-[#3a3a3a] rounded-full text-content flex items-center gap-1 transition-colors" title="Change image">
                     <Upload size={12} />
                     <span>Change</span>
                     <input
@@ -204,10 +210,10 @@ function App() {
                 )}
               </div>
             </div>
-            <div className="flex-1 flex items-center justify-center p-4 relative bg-black/5 dark:bg-black/20">
+            <div className="flex-1 flex items-center justify-center p-4 relative bg-overlay">
               {!image2.dataUrl ? (
                 <ImageUploader
-                  label="Upload Comparison Image"
+                  label="Upload comparison image"
                   onImageSelected={setImage2File}
                   className="w-full max-w-md"
                 />

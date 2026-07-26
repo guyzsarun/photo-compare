@@ -18,7 +18,7 @@ describe('ImageUploader', () => {
   it('should display drag and drop instruction text', () => {
     render(<ImageUploader label="Upload Test Image" onImageSelected={mockOnImageSelected} />);
 
-    expect(screen.getByText(/Drag & drop an image here/)).toBeInTheDocument();
+    expect(screen.getByText(/Drag & drop, or click to browse/)).toBeInTheDocument();
   });
 
   it('should apply custom className', () => {

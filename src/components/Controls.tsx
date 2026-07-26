@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppStore } from '../store';
-import { MapPin, Link2, ZoomIn, ZoomOut, Maximize, Trash2, Download, Upload, Sun, Moon, Image as ImageIcon, Camera } from 'lucide-react';
+import { MapPin, Link2, ZoomIn, ZoomOut, Maximize, Trash2, Download, Upload, Image as ImageIcon, Camera } from 'lucide-react';
 import clsx from 'clsx';
 
 const loadImage = (src: string): Promise<HTMLImageElement> => {
@@ -18,7 +18,6 @@ export const Controls: React.FC = () => {
     syncPanZoom, toggleSyncPanZoom,
     resetPanZoom, clearImages, clearMarkers,
     image1, image2, projectFileHandle, setProjectFileHandle,
-    theme, toggleTheme,
     markerSize1, markerSize2,
   } = useAppStore();
 
@@ -353,116 +352,97 @@ export const Controls: React.FC = () => {
 
   const hasImages = image1.dataUrl || image2.dataUrl;
 
+  const secondaryBtn =
+    'flex items-center gap-2 px-4 py-1.5 rounded-full bg-raised text-content hover:bg-[#3a3a3a] transition-colors active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-raised text-sm font-medium';
+  const iconBtn =
+    'p-2 rounded-full bg-raised text-muted hover:text-content hover:bg-[#3a3a3a] transition-colors active:scale-95';
+
   return (
-    <div className="flex items-center justify-between p-4 bg-stone-200 dark:bg-slate-800 border-b border-stone-300 dark:border-slate-700 shadow-md">
-      <div className="flex items-center gap-4">
-        <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
-          Photo Compare
+    <div className="flex items-center justify-between gap-4 px-6 py-3 bg-elevated border-b border-line">
+      <div className="flex items-center gap-3">
+        <h1 className="flex items-center gap-2 font-display text-lg font-extrabold tracking-tight text-content">
+          <span className="w-2.5 h-2.5 rounded-full bg-accent shrink-0" aria-hidden="true"></span>
+          Photo&nbsp;Compare
         </h1>
 
-        <div className="w-px h-6 bg-stone-300 dark:bg-slate-700 mx-1"></div>
-        
-        <button
-          onClick={handleSave}
-          disabled={!hasImages}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-stone-300 dark:bg-slate-700 text-stone-700 dark:text-slate-300 hover:bg-stone-400 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-          title="Save Project (Images & Markers)"
-        >
+        <div className="w-px h-6 bg-line mx-1"></div>
+
+        <button onClick={handleSave} disabled={!hasImages} className={secondaryBtn} title="Save project (images & markers)">
           <Download size={16} /> Save
         </button>
-        
-        <button
-          onClick={handleLoad}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-stone-300 dark:bg-slate-700 text-stone-700 dark:text-slate-300 hover:bg-stone-400 dark:hover:bg-slate-600 transition-colors text-sm font-medium"
-          title="Load Project"
-        >
+
+        <button onClick={handleLoad} className={secondaryBtn} title="Load project">
           <Upload size={16} /> Load
         </button>
 
-        <button
-          onClick={handleExportJPG}
-          disabled={!hasImages}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-stone-300 dark:bg-slate-700 text-stone-700 dark:text-slate-300 hover:bg-stone-400 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-          title="Save JPG of reference and comparison image with markers"
-        >
+        <button onClick={handleExportJPG} disabled={!hasImages} className={secondaryBtn} title="Export full-resolution JPG with markers">
           <ImageIcon size={16} /> Export JPG
         </button>
 
-        <button
-          onClick={handleExportCurrentView}
-          disabled={!hasImages}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-stone-300 dark:bg-slate-700 text-stone-700 dark:text-slate-300 hover:bg-stone-400 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-          title="Save JPG of the current view (pan, zoom, rotation & filters as shown)"
-        >
+        <button onClick={handleExportCurrentView} disabled={!hasImages} className={secondaryBtn} title="Export the current view (pan, zoom, rotation & filters as shown)">
           <Camera size={16} /> Export View
         </button>
       </div>
 
       <div className="flex items-center gap-2">
+        {/* Signature action — the one green pill, recording-style when live */}
         <button
           onClick={toggleAddingMarker}
           disabled={!hasImages}
           className={clsx(
-            'flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-all duration-200',
-            !hasImages ? 'opacity-50 cursor-not-allowed bg-stone-300 dark:bg-slate-700' :
-            isAddingMarker ? 'bg-red-500 hover:bg-red-600 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-stone-300 dark:bg-slate-700 hover:bg-stone-400 dark:hover:bg-slate-600 text-stone-800 dark:text-slate-200'
+            'flex items-center gap-2 pl-4 pr-5 py-2 rounded-full font-semibold text-sm transition-all duration-200 active:scale-95',
+            !hasImages
+              ? 'opacity-40 cursor-not-allowed bg-raised text-muted'
+              : isAddingMarker
+                ? 'bg-accent hover:bg-accent-hover text-black shadow-[0_0_18px_rgba(29,185,84,0.5)]'
+                : 'bg-accent hover:bg-accent-hover text-black hover:scale-105'
           )}
         >
-          <MapPin size={18} />
-          {isAddingMarker ? 'Adding Markers...' : 'Add Marker'}
+          <MapPin size={18} className={isAddingMarker ? 'animate-pulse' : ''} />
+          {isAddingMarker ? 'Placing markers' : 'Add marker'}
         </button>
 
-        <div className="w-px h-8 bg-stone-300 dark:bg-slate-700 mx-2"></div>
+        <div className="w-px h-8 bg-line mx-1"></div>
 
         <button
           onClick={toggleSyncPanZoom}
           className={clsx(
-            'p-2 rounded-md transition-colors',
-            syncPanZoom ? 'bg-blue-500/20 text-blue-400' : 'bg-stone-300 dark:bg-slate-700 text-stone-500 dark:text-slate-400 hover:bg-stone-400 dark:hover:bg-slate-600'
+            'p-2 rounded-full transition-colors active:scale-95',
+            syncPanZoom ? 'bg-accent/20 text-accent' : 'bg-raised text-muted hover:text-content hover:bg-[#3a3a3a]'
           )}
-          title="Sync Pan & Zoom"
+          title="Sync pan, zoom & rotation across both images"
         >
           <Link2 size={20} />
         </button>
 
-        <button onClick={() => handleZoom('in')} className="p-2 rounded-md bg-stone-300 dark:bg-slate-700 text-stone-700 dark:text-slate-300 hover:bg-stone-400 dark:hover:bg-slate-600 transition-colors" title="Zoom In">
+        <button onClick={() => handleZoom('in')} className={iconBtn} title="Zoom in">
           <ZoomIn size={20} />
         </button>
-        <button onClick={() => handleZoom('out')} className="p-2 rounded-md bg-stone-300 dark:bg-slate-700 text-stone-700 dark:text-slate-300 hover:bg-stone-400 dark:hover:bg-slate-600 transition-colors" title="Zoom Out">
+        <button onClick={() => handleZoom('out')} className={iconBtn} title="Zoom out">
           <ZoomOut size={20} />
         </button>
-        <button onClick={resetPanZoom} className="p-2 rounded-md bg-stone-300 dark:bg-slate-700 text-stone-700 dark:text-slate-300 hover:bg-stone-400 dark:hover:bg-slate-600 transition-colors" title="Reset View">
+        <button onClick={resetPanZoom} className={iconBtn} title="Reset view">
           <Maximize size={20} />
         </button>
 
-        <div className="w-px h-8 bg-stone-300 dark:bg-slate-700 mx-2"></div>
+        <div className="w-px h-8 bg-line mx-1"></div>
 
         <button
           onClick={clearMarkers}
           disabled={image1.markers.length === 0 && image2.markers.length === 0}
-          className="p-2 rounded-md bg-stone-300 dark:bg-slate-700 text-stone-700 dark:text-slate-300 hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Clear All Markers"
+          className="p-2 rounded-full bg-raised text-muted hover:bg-danger hover:text-white transition-colors active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-raised disabled:hover:text-muted"
+          title="Clear all markers"
         >
           <Trash2 size={20} />
         </button>
-        
+
         <button
           onClick={clearImages}
           disabled={!hasImages}
-          className="p-2 rounded-md bg-stone-300 dark:bg-slate-700 text-stone-700 dark:text-slate-300 hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Clear Images"
+          className="px-4 py-1.5 rounded-full bg-raised text-muted hover:bg-danger hover:text-white transition-colors active:scale-95 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-raised disabled:hover:text-muted"
+          title="Remove both images"
         >
-          Clear Images
-        </button>
-
-        <div className="w-px h-8 bg-stone-300 dark:bg-slate-700 mx-2"></div>
-
-        <button
-          onClick={toggleTheme}
-          className="p-2 rounded-md bg-stone-300 dark:bg-slate-700 text-stone-700 dark:text-slate-300 hover:bg-stone-400 dark:hover:bg-slate-600 transition-colors"
-          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-        >
-          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+          Clear images
         </button>
       </div>
     </div>
