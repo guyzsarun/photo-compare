@@ -6,7 +6,8 @@ interface AppState {
   image2: ImageState;
   isAddingMarker: boolean;
   syncPanZoom: boolean; // Now syncs pan, zoom, and rotate
-  markerSize: number;
+  markerSize1: number;
+  markerSize2: number;
   projectFileHandle: any;
   theme: 'dark' | 'light';
 
@@ -17,7 +18,7 @@ interface AppState {
   toggleAddingMarker: () => void;
   toggleSyncPanZoom: () => void;
   toggleTheme: () => void;
-  setMarkerSize: (size: number) => void;
+  setMarkerSize: (imageIndex: 1 | 2, size: number) => void;
 
   addMarker: (imageIndex: 1 | 2, marker: Marker) => void;
   removeMarker: (id: string) => void;
@@ -51,7 +52,8 @@ export const useAppStore = create<AppState>((set) => ({
   image2: { ...initialImageState },
   isAddingMarker: false,
   syncPanZoom: false, // Default to independent, per user request
-  markerSize: 1,
+  markerSize1: 1,
+  markerSize2: 1,
   projectFileHandle: null,
   theme: (document.documentElement.classList.contains('dark') ? 'dark' : 'light') as 'dark' | 'light',
 
@@ -61,7 +63,7 @@ export const useAppStore = create<AppState>((set) => ({
 
   toggleAddingMarker: () => set((state) => ({ isAddingMarker: !state.isAddingMarker })),
   toggleSyncPanZoom: () => set((state) => ({ syncPanZoom: !state.syncPanZoom })),
-  setMarkerSize: (size) => set({ markerSize: size }),
+  setMarkerSize: (imageIndex, size) => set(imageIndex === 1 ? { markerSize1: size } : { markerSize2: size }),
   toggleTheme: () => set((state) => {
     const next = state.theme === 'dark' ? 'light' : 'dark';
     if (next === 'dark') {

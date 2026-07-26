@@ -8,7 +8,7 @@ interface MarkerPanelProps {
 }
 
 export const MarkerPanel: React.FC<MarkerPanelProps> = ({ collapsed, onToggle }) => {
-  const { image1, image2, removeMarker, updateMarkerLabel, updateMarkerColor, markerSize, setMarkerSize } = useAppStore();
+  const { image1, image2, removeMarker, updateMarkerLabel, updateMarkerColor, markerSize1, markerSize2, setMarkerSize } = useAppStore();
 
   // Combine markers from both images or just show them grouped
   const markers1 = image1.markers;
@@ -45,18 +45,33 @@ export const MarkerPanel: React.FC<MarkerPanelProps> = ({ collapsed, onToggle })
           <h2 className="text-lg font-semibold text-stone-800 dark:text-slate-100">Markers</h2>
           <p className="text-sm text-stone-500 dark:text-slate-400">Click on image to add markers</p>
           <div className="flex items-center gap-2 mt-2">
-            <span className="text-xs text-stone-500 dark:text-slate-400 shrink-0">Size:</span>
+            <span className="text-xs text-blue-500 dark:text-blue-400 shrink-0 w-16">Ref size:</span>
             <input
               type="range"
               min="0.5"
               max="3"
               step="0.1"
-              value={markerSize}
-              onChange={(e) => setMarkerSize(Number(e.target.value))}
+              value={markerSize1}
+              onChange={(e) => setMarkerSize(1, Number(e.target.value))}
               className="flex-1 h-1.5 accent-blue-500 cursor-pointer"
             />
             <span className="text-xs text-stone-500 dark:text-slate-400 w-8 text-right shrink-0">
-              {markerSize.toFixed(1)}×
+              {markerSize1.toFixed(1)}×
+            </span>
+          </div>
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className="text-xs text-purple-500 dark:text-purple-400 shrink-0 w-16">Comp size:</span>
+            <input
+              type="range"
+              min="0.5"
+              max="3"
+              step="0.1"
+              value={markerSize2}
+              onChange={(e) => setMarkerSize(2, Number(e.target.value))}
+              className="flex-1 h-1.5 accent-purple-500 cursor-pointer"
+            />
+            <span className="text-xs text-stone-500 dark:text-slate-400 w-8 text-right shrink-0">
+              {markerSize2.toFixed(1)}×
             </span>
           </div>
         </div>

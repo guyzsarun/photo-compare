@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppStore } from '../store';
-import { MapPin, Link2, ZoomIn, ZoomOut, Maximize, Trash2, Download, Upload, Sun, Moon, Image as ImageIcon } from 'lucide-react';
+import { MapPin, Link2, ZoomIn, ZoomOut, Maximize, Trash2, Download, Upload, Sun, Moon, Image as ImageIcon, Camera } from 'lucide-react';
 import clsx from 'clsx';
 
 const loadImage = (src: string): Promise<HTMLImageElement> => {
@@ -19,7 +19,7 @@ export const Controls: React.FC = () => {
     resetPanZoom, clearImages, clearMarkers,
     image1, image2, projectFileHandle, setProjectFileHandle,
     theme, toggleTheme,
-    markerSize,
+    markerSize1, markerSize2,
   } = useAppStore();
 
   const handleZoom = (direction: 'in' | 'out') => {
@@ -187,7 +187,7 @@ export const Controls: React.FC = () => {
         ctx.rotate(rad1);
         ctx.filter = 'none';
 
-        const radius = (0.3 / (image1.fitScale || 1)) * markerSize;
+        const radius = (0.3 / (image1.fitScale || 1)) * markerSize1;
         (image1.markers || []).forEach(marker => {
           const mx = marker.x - img1.width / 2;
           const my = marker.y - img1.height / 2;
@@ -220,7 +220,7 @@ export const Controls: React.FC = () => {
         ctx.rotate(rad2);
         ctx.filter = 'none';
 
-        const radius = (0.3 / (image2.fitScale || 1)) * markerSize;
+        const radius = (0.3 / (image2.fitScale || 1)) * markerSize2;
         (image2.markers || []).forEach(marker => {
           const mx = marker.x - img2.width / 2;
           const my = marker.y - img2.height / 2;
@@ -262,6 +262,95 @@ export const Controls: React.FC = () => {
     }
   };
 
+  // Export exactly what the user currently sees: the two on-screen canvases
+  // (pan/zoom/rotation already baked into their pixels by Fabric) composited
+  // side-by-side, with each panel's brightness/contrast CSS filter re-applied.
+  const handleExportCurrentView = () => {
+    if (!image1.dataUrl && !image2.dataUrl) {
+      alert("No images are loaded to export.");
+      return;
+    }
+
+    try {
+      const getCanvas = (index: 1 | 2): HTMLCanvasElement | null =>
+        document.querySelector<HTMLCanvasElement>(`canvas[data-image-index="${index}"]`);
+
+      const canvas1 = image1.dataUrl ? getCanvas(1) : null;
+      const canvas2 = image2.dataUrl ? getCanvas(2) : null;
+
+      if (!canvas1 && !canvas2) {
+        alert("Could not find the on-screen view to export.");
+        return;
+      }
+
+      const w1 = canvas1?.width ?? 0;
+      const h1 = canvas1?.height ?? 0;
+      const w2 = canvas2?.width ?? 0;
+      const h2 = canvas2?.height ?? 0;
+
+      const exportWidth = w1 + w2;
+      const exportHeight = Math.max(h1, h2);
+
+      if (exportWidth === 0 || exportHeight === 0) {
+        alert("Failed to determine dimensions for the export image.");
+        return;
+      }
+
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = exportWidth;
+      exportCanvas.height = exportHeight;
+
+      const ctx = exportCanvas.getContext('2d');
+      if (!ctx) {
+        alert("Failed to create 2D context for export.");
+        return;
+      }
+
+      const bg = getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg').trim() || '#f5f5f4';
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, exportWidth, exportHeight);
+
+      // Draw Reference view (image1), vertically centered, filter baked in
+      if (canvas1) {
+        ctx.save();
+        ctx.filter = `brightness(${image1.brightness ?? 100}%) contrast(${image1.contrast ?? 100}%)`;
+        ctx.drawImage(canvas1, 0, Math.max(0, (exportHeight - h1) / 2));
+        ctx.restore();
+      }
+
+      // Draw Comparison view (image2) to the right of image1
+      if (canvas2) {
+        ctx.save();
+        ctx.filter = `brightness(${image2.brightness ?? 100}%) contrast(${image2.contrast ?? 100}%)`;
+        ctx.drawImage(canvas2, w1, Math.max(0, (exportHeight - h2) / 2));
+        ctx.restore();
+      }
+
+      const dataUrl = exportCanvas.toDataURL('image/jpeg', 0.9);
+
+      let filename = 'photo-compare-view.jpg';
+      if (image1.file && image2.file) {
+        const name1 = image1.file.name.substring(0, image1.file.name.lastIndexOf('.')) || image1.file.name;
+        const name2 = image2.file.name.substring(0, image2.file.name.lastIndexOf('.')) || image2.file.name;
+        filename = `view_${name1}_vs_${name2}.jpg`;
+      } else if (image1.file) {
+        const name1 = image1.file.name.substring(0, image1.file.name.lastIndexOf('.')) || image1.file.name;
+        filename = `view_${name1}.jpg`;
+      } else if (image2.file) {
+        const name2 = image2.file.name.substring(0, image2.file.name.lastIndexOf('.')) || image2.file.name;
+        filename = `view_${name2}.jpg`;
+      }
+
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Failed to export current view:', err);
+      alert('Failed to export current view.');
+    }
+  };
+
   const hasImages = image1.dataUrl || image2.dataUrl;
 
   return (
@@ -297,6 +386,15 @@ export const Controls: React.FC = () => {
           title="Save JPG of reference and comparison image with markers"
         >
           <ImageIcon size={16} /> Export JPG
+        </button>
+
+        <button
+          onClick={handleExportCurrentView}
+          disabled={!hasImages}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-stone-300 dark:bg-slate-700 text-stone-700 dark:text-slate-300 hover:bg-stone-400 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+          title="Save JPG of the current view (pan, zoom, rotation & filters as shown)"
+        >
+          <Camera size={16} /> Export View
         </button>
       </div>
 
