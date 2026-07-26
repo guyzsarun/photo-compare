@@ -9,17 +9,11 @@ interface ImageCanvasProps {
   height: number;
 }
 
-// Cap the bitmap handed to Fabric so pan/zoom/rotate stays smooth on very large
-// source photos. Markers still store coordinates in the original image's pixel
-// space; displayScaleRef/originalDimsRef convert between the two spaces.
-const MAX_DISPLAY_DIMENSION = 2048;
-
 export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, height }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
   const imageObjRef = useRef<fabric.Image | null>(null);
   const originalDimsRef = useRef({ width: 0, height: 0 });
-  const displayScaleRef = useRef(1);
   const [imageLoadedKey, setImageLoadedKey] = useState(0);
   const [resizeKey, setResizeKey] = useState(0);
 
@@ -308,45 +302,14 @@ export const ImageCanvas: React.FC<ImageCanvasProps> = ({ imageIndex, width, hei
       const originalHeight = imgElement.naturalHeight;
       originalDimsRef.current = { width: originalWidth, height: originalHeight };
 
-      // Downscale the source bitmap before handing it to Fabric. Fabric redraws the
-      // whole texture on every pan/zoom/rotate frame, so a 40MP photo would tank the
-      // frame rate. We cap the longest edge at MAX_DISPLAY_DIMENSION and let Fabric
-      // report the *original* width/height (set() below), so all marker-coordinate
-      // and export math continues to operate in original-pixel space unchanged.
-      const longestEdge = Math.max(originalWidth, originalHeight);
-      const displayScale = longestEdge > MAX_DISPLAY_DIMENSION ? MAX_DISPLAY_DIMENSION / longestEdge : 1;
-      displayScaleRef.current = displayScale;
-
-      let element: HTMLImageElement | HTMLCanvasElement = imgElement;
-      if (displayScale < 1) {
-        const downscaled = document.createElement('canvas');
-        downscaled.width = Math.round(originalWidth * displayScale);
-        downscaled.height = Math.round(originalHeight * displayScale);
-        const dctx = downscaled.getContext('2d');
-        if (dctx) {
-          dctx.imageSmoothingEnabled = true;
-          dctx.imageSmoothingQuality = 'high';
-          dctx.drawImage(imgElement, 0, 0, downscaled.width, downscaled.height);
-          element = downscaled;
-        }
-      }
-
-      const img = new fabric.Image(element);
+      // Render the image at full resolution so fine detail is preserved for
+      // analysis. Marker-coordinate and export math already operate in
+      // original-pixel space, which matches the texture 1:1.
+      const img = new fabric.Image(imgElement);
       if (imageObjRef.current) {
         canvas.remove(imageObjRef.current);
       }
 
-      // Center and scale image. Force width/height to the original resolution so the
-      // downscaled texture is stretched back to full logical size and every consumer
-      // (marker placement, drag, center, export) keeps working in original pixels.
-      // _filterScalingX/Y tell Fabric's renderer that the backing element is a
-      // downsampled copy, so it maps the small texture across the full object rect
-      // instead of clamping the draw to the element's (smaller) pixel dimensions.
-      img.set({ width: originalWidth, height: originalHeight });
-      if (displayScale < 1) {
-        (img as any)._filterScalingX = displayScale;
-        (img as any)._filterScalingY = displayScale;
-      }
       const scale = Math.min(width / originalWidth, height / originalHeight);
       useAppStore.getState().updateFitScale(imageIndex, scale);
       img.set({
